@@ -225,31 +225,6 @@ export default function HealthDashboard({
                 <ActivityCard calories={healthData.calories} />
               </div>
 
-              {/* Add Glucose Tracker Card */}
-              <Card className="bg-white">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-teal-100 p-2 rounded-full">
-                        <Droplet className="h-5 w-5 text-teal-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Сахарын мэдээлэл</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Сахарын хэмжилт хянах, тэмдэглэх
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleNavigation("/glucose-tracker")}
-                    >
-                      Хянах
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Add Diabetes Assessment Card */}
               <Card className="bg-white">
                 <CardContent className="p-4">
@@ -272,6 +247,31 @@ export default function HealthDashboard({
                       onClick={() => handleNavigation("/diabetes-assessment")}
                     >
                       Үнэлгээ хийх
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Add Glucose Tracker Card */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-teal-100 p-2 rounded-full">
+                        <Droplet className="h-5 w-5 text-teal-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Сахарын мэдээлэл</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Сахарын хэмжилт хянах, тэмдэглэх
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleNavigation("/glucose-tracker")}
+                    >
+                      Хянах
                     </Button>
                   </div>
                 </CardContent>
