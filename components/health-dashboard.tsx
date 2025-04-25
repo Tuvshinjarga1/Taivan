@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Activity,
@@ -30,25 +30,27 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { saveHealthData } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 // Static glucose data for demo
 const staticGlucoseData = [
   {
     id: "g1",
     value: 110,
-    timestamp: "2025-04-20T07:28:00Z",
+    timestamp: "2023-04-20T07:28:00Z",
     type: "Хооллохын өмнө",
   },
   {
     id: "g2",
     value: 135,
-    timestamp: "2025-04-20T06:30:00Z",
+    timestamp: "2023-04-20T06:30:00Z",
     type: "Хооллосноос хойш",
   },
   {
     id: "g3",
     value: 105,
-    timestamp: "2025-04-20T05:45:00Z",
+    timestamp: "2023-04-20T05:45:00Z",
     type: "Хооллохын өмнө",
   },
 ];
@@ -69,6 +71,7 @@ export default function HealthDashboard({
 }: HealthDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const router = useRouter();
+  const { toast } = useToast();
 
   // Demo flag - always enable diabetic features for demo
   const isDiabetic = true;
@@ -76,7 +79,59 @@ export default function HealthDashboard({
   // Latest glucose reading (static data)
   const latestGlucoseReading = staticGlucoseData[0];
 
-  const handleNavigation = (path: string) => {
+  // Өгөгдлийг Firebase-д хадгалах (Хэрэглэгч тус бүрийн хандалтыг хянах)
+  useEffect(() => {
+    const saveUserActivity = async () => {
+      try {
+        // Хэрэглэгчийн хандалтын өгөгдлийг хадгалах
+        await saveHealthData(userId, {
+          viewTimestamp: new Date().toISOString(),
+          healthMetrics: healthData,
+          activeTab: "overview",
+          latestGlucoseReading,
+          deviceInfo: {
+            userAgent: window.navigator.userAgent,
+            language: window.navigator.language,
+            platform: window.navigator.platform,
+          },
+        });
+      } catch (error) {
+        console.error("Error saving user activity data:", error);
+      }
+    };
+
+    // Хуудас руу орох бүрт ажиллана
+    saveUserActivity();
+  }, [userId, healthData, latestGlucoseReading]);
+
+  // Таб сонгох бүрт гүйцэтгэх
+  const handleTabChange = async (value: string) => {
+    setActiveTab(value);
+
+    try {
+      // Таб сонгосон үйлдлийг хадгалах
+      await saveHealthData(userId, {
+        eventType: "tabChange",
+        tabValue: value,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error saving tab change event:", error);
+    }
+  };
+
+  const handleNavigation = async (path: string) => {
+    try {
+      // Хуудас шилжилтийн үйлдлийг хадгалах
+      await saveHealthData(userId, {
+        eventType: "navigation",
+        destination: path,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error saving navigation event:", error);
+    }
+
     router.push(path);
   };
 
@@ -105,6 +160,34 @@ export default function HealthDashboard({
       label: "Маш өндөр",
       color: "text-red-500 bg-red-100",
     };
+  };
+
+  // Чихрийн шижингийн үнэлгээ хийх үйлдэл
+  const handleDiabetesAssessment = async () => {
+    try {
+      // Үнэлгээ хийх үйлдлийг хадгалах
+      await saveHealthData(userId, {
+        eventType: "diabetesAssessmentRequested",
+        timestamp: new Date().toISOString(),
+        glucoseLevel: latestGlucoseReading?.value,
+      });
+
+      // Нэмэлт мэдээлэл харуулах
+      toast({
+        title: "Чихрийн шижингийн үнэлгээ",
+        description: "Үнэлгээний хуудас руу шилжиж байна",
+      });
+
+      // Үнэлгээний хуудас руу шилжих
+      handleNavigation("/diabetes-assessment");
+    } catch (error) {
+      console.error("Error handling diabetes assessment:", error);
+      toast({
+        title: "Алдаа гарлаа",
+        description: "Үйлдлийг гүйцэтгэх үед алдаа гарлаа. Дахин оролдоно уу.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -160,7 +243,7 @@ export default function HealthDashboard({
         <Tabs
           defaultValue="overview"
           className="mt-6"
-          onValueChange={setActiveTab}
+          onValueChange={handleTabChange}
         >
           <TabsList className="grid grid-cols-7 h-auto">
             <TabsTrigger
@@ -242,10 +325,7 @@ export default function HealthDashboard({
                         </p>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleNavigation("/diabetes-assessment")}
-                    >
+                    <Button size="sm" onClick={handleDiabetesAssessment}>
                       Үнэлгээ хийх
                     </Button>
                   </div>

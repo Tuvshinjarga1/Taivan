@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { saveHealthData } from "@/lib/firebase";
 
 interface DiabetesRiskAssessmentProps {
   userId: string;
@@ -45,7 +46,7 @@ export default function DiabetesRiskAssessment({
 
   // Form state
   const [formData, setFormData] = useState({
-    age: "",
+    Age: "",
     gender: "",
     polyuria: "", // шээс ихдэх
     polydipsia: "", // ам цангах
@@ -71,23 +72,69 @@ export default function DiabetesRiskAssessment({
   };
 
   const runPrediction = async () => {
-    // Validate form
+    // Validate form and display form data for debugging
+    console.log("Form data:", formData);
+
+    let hasMissingFields = false;
+    let missingField = "";
+
+    // Талбарын нэр - монгол нэрний харгалзаа
+    const fieldLabels: Record<string, string> = {
+      Age: "Нас",
+      gender: "Хүйс",
+      polyuria: "Шээс ихдэх",
+      polydipsia: "Ам цангах",
+      suddenWeightLoss: "Гэнэт жин хаях",
+      weakness: "Ядралт",
+      polyphagia: "Хоол их идэх",
+      genitalThrush: "Бэлэг эрхтний мөөгөнцөр",
+      visualBlurring: "Хараа бүрэлзэх",
+      itching: "Загатнах",
+      irritability: "Цочромтгой байдал",
+      delayedHealing: "Шарх удаан эдгэх",
+      partialParesis: "Хэсэгчилсэн саажилт",
+      muscleStiffness: "Булчингийн хөшүүн байдал",
+      alopecia: "Үс уналт",
+      obesity: "Илүүдэл жинтэй эсэх",
+    };
+
+    // Check each field
     for (const [key, value] of Object.entries(formData)) {
       if (!value) {
-        setError(
-          `Бүх талбарыг бөглөнө үү. (${getFieldLabel(key)} дутуу байна)`
-        );
-        return;
+        hasMissingFields = true;
+        missingField = fieldLabels[key] || key;
+        break;
       }
+    }
+
+    if (hasMissingFields) {
+      setError(`Бүх талбарыг бөглөнө үү. (${missingField} дутуу байна)`);
+      return;
     }
 
     setIsLoading(true);
     setError(null);
 
     try {
+      // Хэрэглэгчийн оруулсан мэдээллийг Firebase-д хадгалах
+      // Энэ нь оролтын мэдээллийг хадгална
+      const userInputData = {
+        type: "diabetesAssessmentInput",
+        timestamp: new Date().toISOString(),
+        formData: { ...formData },
+        deviceInfo: {
+          userAgent: window.navigator.userAgent,
+          language: window.navigator.language,
+          platform: window.navigator.platform,
+        },
+      };
+
+      // Оролтын мэдээллийг хадгалах
+      await saveHealthData(userId, userInputData);
+
       // Prepare request data
       const requestData = {
-        Age: parseInt(formData.age),
+        Age: parseInt(formData.Age),
         Gender: formData.gender === "Male" ? "Male" : "Female",
         Polyuria: formData.polyuria === "Yes" ? "Yes" : "No",
         Polydipsia: formData.polydipsia === "Yes" ? "Yes" : "No",
@@ -117,7 +164,6 @@ export default function DiabetesRiskAssessment({
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          mode: "cors",
           body: JSON.stringify(requestData),
         }
       );
@@ -145,6 +191,37 @@ export default function DiabetesRiskAssessment({
         title: "Оношилгоо дууслаа",
         description: "Таны чихрийн шижингийн оношилгоо амжилттай дууслаа",
       });
+
+      // Save assessment data and results to Firebase
+      const assessmentData = {
+        type: "diabetesAssessmentComplete",
+        timestamp: new Date().toISOString(),
+        userInput: formData,
+        requestData: requestData, // API рүү илгээсэн өгөгдөл
+        symptoms: {
+          age: parseInt(formData.Age),
+          gender: formData.gender,
+          hasPolyuria: formData.polyuria === "Yes",
+          hasPolydipsia: formData.polydipsia === "Yes",
+          hasSuddenWeightLoss: formData.suddenWeightLoss === "Yes",
+          hasWeakness: formData.weakness === "Yes",
+          hasPolyphagia: formData.polyphagia === "Yes",
+          hasGenitalThrush: formData.genitalThrush === "Yes",
+          hasVisualBlurring: formData.visualBlurring === "Yes",
+          hasItching: formData.itching === "Yes",
+          hasIrritability: formData.irritability === "Yes",
+          hasDelayedHealing: formData.delayedHealing === "Yes",
+          hasPartialParesis: formData.partialParesis === "Yes",
+          hasMuscleStiffness: formData.muscleStiffness === "Yes",
+          hasAlopecia: formData.alopecia === "Yes",
+          hasObesity: formData.obesity === "Yes",
+        },
+        result: result,
+        predictionPercentage: (result.prediction * 100).toFixed(1) + "%",
+        isDiabetic: result.class === "Positive" || result.prediction > 0.5,
+      };
+
+      await saveHealthData(userId, assessmentData);
     } catch (error: any) {
       console.error("Error during prediction:", error);
       if (!error.message?.includes("API хүсэлт амжилтгүй")) {
@@ -169,7 +246,7 @@ export default function DiabetesRiskAssessment({
   // Helper to get field label
   const getFieldLabel = (field: string): string => {
     const labels: Record<string, string> = {
-      age: "Нас",
+      Age: "Нас",
       Gender: "Хүйс",
       Polyuria: "Шээс ихдэх",
       polydipsia: "Ам цангах",
@@ -191,31 +268,60 @@ export default function DiabetesRiskAssessment({
 
   // Generate form field
   const renderTextField = (field: string) => {
+    // Талбарын нэрийг харгалзах formData ключ рүү хөрвүүлэх
+    const fieldKey = getFieldKey(field);
+
     return (
       <div className="space-y-2">
-        <Label htmlFor={field}>{getFieldLabel(field)}</Label>
+        <Label htmlFor={fieldKey}>{field}</Label>
         <Input
-          id={field}
+          id={fieldKey}
           type="number"
-          value={formData[field as keyof typeof formData]}
-          onChange={(e) => updateFormField(field, e.target.value)}
+          value={formData[fieldKey as keyof typeof formData]}
+          onChange={(e) => updateFormField(fieldKey, e.target.value)}
           className="w-full"
         />
       </div>
     );
   };
 
+  // Монгол нэрийг formData ключ рүү хөрвүүлэх
+  const getFieldKey = (fieldLabel: string): string => {
+    const labelToKey: Record<string, string> = {
+      Нас: "Age",
+      Хүйс: "gender",
+      "Шээс ихдэх": "polyuria",
+      "Ам цангах": "polydipsia",
+      "Гэнэт жин хаях": "suddenWeightLoss",
+      Ядралт: "weakness",
+      "Хоол их идэх": "polyphagia",
+      "Бэлэг эрхтний мөөгөнцөр": "genitalThrush",
+      "Хараа бүрэлзэх": "visualBlurring",
+      Загатнах: "itching",
+      "Цочромтгой байдал": "irritability",
+      "Шарх удаан эдгэх": "delayedHealing",
+      "Хэсэгчилсэн саажилт": "partialParesis",
+      "Булчингийн хөшүүн байдал": "muscleStiffness",
+      "Үс уналт": "alopecia",
+      "Илүүдэл жинтэй эсэх": "obesity",
+    };
+    return labelToKey[fieldLabel] || fieldLabel;
+  };
+
   // Generate dropdown field
   const renderDropdown = (field: string, options: string[]) => {
+    // Талбарын нэрийг харгалзах formData ключ рүү хөрвүүлэх
+    const fieldKey = getFieldKey(field);
+
     return (
       <div className="space-y-2">
-        <Label htmlFor={field}>{getFieldLabel(field)}</Label>
+        <Label htmlFor={fieldKey}>{field}</Label>
         <Select
-          value={formData[field as keyof typeof formData]}
-          onValueChange={(value) => updateFormField(field, value)}
+          value={formData[fieldKey as keyof typeof formData]}
+          onValueChange={(value) => updateFormField(fieldKey, value)}
         >
-          <SelectTrigger id={field}>
-            <SelectValue placeholder={`Үгүй`} />
+          <SelectTrigger id={fieldKey}>
+            <SelectValue placeholder={`Сонгоно уу`} />
           </SelectTrigger>
           <SelectContent>
             {options.map((option) => (
