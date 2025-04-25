@@ -250,6 +250,33 @@ export default function HealthDashboard({
                 </CardContent>
               </Card>
 
+              {/* Add Diabetes Assessment Card */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-red-100 p-2 rounded-full">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">
+                          Чихрийн шижингийн эрсдэлийн үнэлгээ
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Чихрийн шижин үүсэх эрсдэлээ шалгах
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleNavigation("/diabetes-assessment")}
+                    >
+                      Үнэлгээ хийх
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Add Food Analyzer Card */}
               <Card className="bg-white">
                 <CardContent className="p-4">
@@ -294,33 +321,6 @@ export default function HealthDashboard({
                       onClick={() => handleNavigation("/smartwatch")}
                     >
                       Төхөөрөмж холбох
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Add Diabetes Assessment Card */}
-              <Card className="bg-white">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-red-100 p-2 rounded-full">
-                        <AlertTriangle className="h-5 w-5 text-red-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">
-                          Чихрийн шижингийн эрсдэлийн үнэлгээ
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Чихрийн шижин үүсэх эрсдэлээ шалгах
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleNavigation("/diabetes-assessment")}
-                    >
-                      Үнэлгээ хийх
                     </Button>
                   </div>
                 </CardContent>
