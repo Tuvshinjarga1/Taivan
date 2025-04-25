@@ -116,21 +116,21 @@ export default function DiabetesRiskAssessment({
     setError(null);
 
     try {
-      // // Хэрэглэгчийн оруулсан мэдээллийг Firebase-д хадгалах
-      // // Энэ нь оролтын мэдээллийг хадгална
-      // const userInputData = {
-      //   type: "diabetesAssessmentInput",
-      //   timestamp: new Date().toISOString(),
-      //   formData: { ...formData },
-      //   deviceInfo: {
-      //     userAgent: window.navigator.userAgent,
-      //     language: window.navigator.language,
-      //     platform: window.navigator.platform,
-      //   },
-      // };
+      // Хэрэглэгчийн оруулсан мэдээллийг Firebase-д хадгалах
+      // Энэ нь оролтын мэдээллийг хадгална
+      const userInputData = {
+        type: "diabetesAssessmentInput",
+        timestamp: new Date().toISOString(),
+        formData: { ...formData },
+        // deviceInfo: {
+        //   userAgent: window.navigator.userAgent,
+        //   language: window.navigator.language,
+        //   platform: window.navigator.platform,
+        // },
+      };
 
-      // // Оролтын мэдээллийг хадгалах
-      // await saveHealthData(userId, userInputData);
+      // Оролтын мэдээллийг хадгалах
+      await saveHealthData(userId, userInputData);
 
       // Prepare request data
       const requestData = {
@@ -192,15 +192,36 @@ export default function DiabetesRiskAssessment({
         description: "Таны чихрийн шижингийн оношилгоо амжилттай дууслаа",
       });
 
-      // Save minimal assessment data to Firebase - only input and result
-      const simpleData = {
+      // Save assessment data and results to Firebase
+      const assessmentData = {
+        type: "diabetesAssessmentComplete",
         timestamp: new Date().toISOString(),
-        userInput: formData, // Хэрэглэгчийн оруулсан мэдээлэл
-        result: result, // API-ийн хариу
+        userInput: formData,
+        requestData: requestData, // API рүү илгээсэн өгөгдөл
+        symptoms: {
+          age: parseInt(formData.Age),
+          gender: formData.gender,
+          hasPolyuria: formData.polyuria === "Yes",
+          hasPolydipsia: formData.polydipsia === "Yes",
+          hasSuddenWeightLoss: formData.suddenWeightLoss === "Yes",
+          hasWeakness: formData.weakness === "Yes",
+          hasPolyphagia: formData.polyphagia === "Yes",
+          hasGenitalThrush: formData.genitalThrush === "Yes",
+          hasVisualBlurring: formData.visualBlurring === "Yes",
+          hasItching: formData.itching === "Yes",
+          hasIrritability: formData.irritability === "Yes",
+          hasDelayedHealing: formData.delayedHealing === "Yes",
+          hasPartialParesis: formData.partialParesis === "Yes",
+          hasMuscleStiffness: formData.muscleStiffness === "Yes",
+          hasAlopecia: formData.alopecia === "Yes",
+          hasObesity: formData.obesity === "Yes",
+        },
+        result: result,
+        predictionPercentage: (result.prediction * 100).toFixed(1) + "%",
         isDiabetic: result.class === "Positive" || result.prediction > 0.5,
       };
 
-      await saveHealthData(userId, simpleData);
+      await saveHealthData(userId, assessmentData);
     } catch (error: any) {
       console.error("Error during prediction:", error);
       if (!error.message?.includes("API хүсэлт амжилтгүй")) {
