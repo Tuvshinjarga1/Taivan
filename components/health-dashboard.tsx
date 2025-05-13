@@ -80,29 +80,29 @@ export default function HealthDashboard({
   const latestGlucoseReading = staticGlucoseData[0];
 
   // Өгөгдлийг Firebase-д хадгалах (Хэрэглэгч тус бүрийн хандалтыг хянах)
-  useEffect(() => {
-    const saveUserActivity = async () => {
-      try {
-        // Хэрэглэгчийн хандалтын өгөгдлийг хадгалах
-        await saveHealthData(userId, {
-          viewTimestamp: new Date().toISOString(),
-          healthMetrics: healthData,
-          activeTab: "overview",
-          latestGlucoseReading,
-          deviceInfo: {
-            userAgent: window.navigator.userAgent,
-            language: window.navigator.language,
-            platform: window.navigator.platform,
-          },
-        });
-      } catch (error) {
-        console.error("Error saving user activity data:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const saveUserActivity = async () => {
+  //     try {
+  //       // Хэрэглэгчийн хандалтын өгөгдлийг хадгалах
+  //       await saveHealthData(userId, {
+  //         viewTimestamp: new Date().toISOString(),
+  //         healthMetrics: healthData,
+  //         activeTab: "overview",
+  //         latestGlucoseReading,
+  //         deviceInfo: {
+  //           userAgent: window.navigator.userAgent,
+  //           language: window.navigator.language,
+  //           platform: window.navigator.platform,
+  //         },
+  //       });
+  //     } catch (error) {
+  //       console.error("Error saving user activity data:", error);
+  //     }
+  //   };
 
-    // Хуудас руу орох бүрт ажиллана
-    saveUserActivity();
-  }, [userId, healthData, latestGlucoseReading]);
+  //   // Хуудас руу орох бүрт ажиллана
+  //   saveUserActivity();
+  // }, [userId, healthData, latestGlucoseReading]);
 
   // Таб сонгох бүрт гүйцэтгэх
   const handleTabChange = async (value: string) => {
@@ -246,7 +246,7 @@ export default function HealthDashboard({
           onValueChange={handleTabChange}
         >
           <TabsList className="grid grid-cols-7 h-auto">
-            <TabsTrigger
+            {/* <TabsTrigger
               value="overview"
               className="flex flex-col items-center py-2 px-1"
             >
@@ -280,7 +280,7 @@ export default function HealthDashboard({
             >
               <Moon className="h-5 w-5 mb-1" />
               <span className="text-xs">Нойр</span>
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger
               value="insights"
               className="flex flex-col items-center py-2 px-1"
@@ -288,25 +288,25 @@ export default function HealthDashboard({
               <Sparkles className="h-5 w-5 mb-1" />
               <span className="text-xs">AI</span>
             </TabsTrigger>
-            <TabsTrigger
+            {/* <TabsTrigger
               value="add"
               className="flex flex-col items-center py-2 px-1"
             >
               <PlusCircle className="h-5 w-5 mb-1" />
               <span className="text-xs">Нэмэх</span>
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="overview" className="mt-4">
             <div className="grid grid-cols-1 gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <HeartRateCard heartRate={healthData.heartRate} />
                 <StepsCard steps={healthData.steps} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SleepCard sleep={healthData.sleep} />
                 <ActivityCard calories={healthData.calories} />
-              </div>
+              </div> */}
 
               {/* Add Diabetes Assessment Card */}
               <Card className="bg-white">
@@ -333,7 +333,7 @@ export default function HealthDashboard({
               </Card>
 
               {/* Add Glucose Tracker Card */}
-              <Card className="bg-white">
+              {/* <Card className="bg-white">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -355,10 +355,10 @@ export default function HealthDashboard({
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Add Food Analyzer Card */}
-              <Card className="bg-white">
+              {/* <Card className="bg-white">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -380,9 +380,9 @@ export default function HealthDashboard({
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              <Card className="bg-white">
+              {/* <Card className="bg-white">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export default function HealthDashboard({
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Add Diabetes Information Card */}
               <Card className="bg-white">
@@ -469,13 +469,13 @@ export default function HealthDashboard({
           <LineChart className="h-5 w-5" />
           <span className="text-xs mt-1">Хянах самбар</span>
         </button>
-        {/* <button
+        <button
           className="flex flex-col items-center p-2"
-          onClick={() => handleNavigation("/reports")}
+          onClick={() => handleNavigation("/smartwatch")}
         >
-          <BarChart3 className="h-5 w-5" />
-          <span className="text-xs mt-1">Тайлан</span>
-        </button> */}
+          <Watch className="h-5 w-5" />
+          <span className="text-xs mt-1">Ухаалаг цаг</span>
+        </button>
         <button
           className="flex flex-col items-center p-2"
           onClick={() => handleNavigation("/food-analyzer")}

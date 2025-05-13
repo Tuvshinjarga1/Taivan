@@ -1,9 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Loader2,
+  Calendar,
+  TrendingUp,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
 import {
@@ -16,68 +30,88 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { saveGlucoseReading, getGlucoseReadings } from "@/lib/diabetes-service";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import GlucoseChart from "@/components/glucose-chart";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
-// Статик өгөгдөл
-const staticGlucoseReadings = [
-  {
-    id: "g1",
-    value: 110,
-    timestamp: "2023-04-20T07:28:00Z",
-    type: "Хооллохын өмнө",
-  },
-  {
-    id: "g2",
-    value: 135,
-    timestamp: "2023-04-20T06:30:00Z",
-    type: "Хооллосноос хойш",
-  },
-  {
-    id: "g3",
-    value: 105,
-    timestamp: "2023-04-20T05:45:00Z",
-    type: "Хооллохын өмнө",
-  },
-  {
-    id: "g4",
-    value: 142,
-    timestamp: "2023-04-19T10:15:00Z",
-    type: "Хооллосноос хойш",
-  },
-  {
-    id: "g5",
-    value: 118,
-    timestamp: "2023-04-18T08:30:00Z",
-    type: "Хооллохын өмнө",
-  },
-  {
-    id: "g6",
-    value: 138,
-    timestamp: "2023-04-17T12:45:00Z",
-    type: "Хооллосноос хойш",
-  },
-  {
-    id: "g7",
-    value: 98,
-    timestamp: "2023-04-16T06:00:00Z",
-    type: "Өлөн үед",
-  },
-];
+// Define types based on the diabetes-service.ts file
+interface GlucoseReading {
+  id?: string;
+  userId: string;
+  value: number;
+  readingType: "fasting" | "before_meal" | "after_meal" | "bedtime" | "random";
+  timestamp: Date;
+  notes?: string;
+}
 
-// Статик хэрэглэгчийн ID
-const staticUserId = "demo-user-123";
+interface GlucoseStats {
+  average: number;
+  min: number;
+  max: number;
+  inRange: number;
+  total: number;
+  trend: "up" | "down" | "stable";
+  readingsByType: {
+    [key: string]: {
+      count: number;
+      average: number;
+    };
+  };
+}
 
 export default function GlucoseTrackerPage() {
   const [activeTab, setActiveTab] = useState("chart");
   const [value, setValue] = useState(110);
-  const [type, setType] = useState("Хооллохын өмнө");
+  const [readingType, setReadingType] =
+    useState<GlucoseReading["readingType"]>("before_meal");
+  const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [readings, setReadings] = useState<GlucoseReading[]>([]);
+  const [isLoadingReadings, setIsLoadingReadings] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
+
+  // Статик хэрэглэгчийн ID - real app would get this from auth
+  const userId = "user123";
+
+  // Fetch glucose readings on component mount
+  useEffect(() => {
+    async function fetchReadings() {
+      setIsLoadingReadings(true);
+      try {
+        const result = await getGlucoseReadings(userId, 30);
+        if (result.success && result.data) {
+          setReadings(result.data);
+        } else {
+          toast({
+            title: "Алдаа гарлаа",
+            description: result.error || "Хэмжилтүүдийг ачаалж чадсангүй",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching readings:", error);
+        toast({
+          title: "Алдаа гарлаа",
+          description: "Хэмжилтүүдийг ачаалж чадсангүй",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingReadings(false);
+      }
+    }
+
+    fetchReadings();
+  }, [toast, userId]);
 
   // Simple search functionality
-  const filteredReadings = staticGlucoseReadings.filter(
+  const filteredReadings = readings.filter(
     (reading) =>
-      reading.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reading.readingType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       reading.value.toString().includes(searchTerm.toLowerCase())
   );
 
@@ -97,19 +131,182 @@ export default function GlucoseTrackerPage() {
     return "Маш өндөр";
   };
 
-  // Simulate submitting a new reading
-  const handleSubmit = (e: React.FormEvent) => {
+  // Convert reading type to display text
+  const getReadingTypeText = (type: GlucoseReading["readingType"]) => {
+    switch (type) {
+      case "fasting":
+        return "Өлөн үед";
+      case "before_meal":
+        return "Хооллохын өмнө";
+      case "after_meal":
+        return "Хооллосноос хойш";
+      case "bedtime":
+        return "Унтахын өмнө";
+      case "random":
+        return "Санамсаргүй";
+      default:
+        return type;
+    }
+  };
+
+  // Calculate statistics for a given time period
+  const calculateStats = (
+    periodReadings: GlucoseReading[]
+  ): GlucoseStats | null => {
+    if (!periodReadings.length) return null;
+
+    // Sort readings by timestamp
+    const sortedReadings = [...periodReadings].sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+    );
+
+    // Calculate average
+    const sum = sortedReadings.reduce((acc, reading) => acc + reading.value, 0);
+    const average = Math.round(sum / sortedReadings.length);
+
+    // Calculate min and max
+    const min = Math.min(...sortedReadings.map((r) => r.value));
+    const max = Math.max(...sortedReadings.map((r) => r.value));
+
+    // Calculate % in range (70-140 mg/dL is considered normal)
+    const inRange = sortedReadings.filter(
+      (r) => r.value >= 70 && r.value <= 140
+    ).length;
+    const percentInRange = Math.round((inRange / sortedReadings.length) * 100);
+
+    // Calculate trend (compare first half vs second half of readings)
+    const midpoint = Math.floor(sortedReadings.length / 2);
+    const firstHalf = sortedReadings.slice(0, midpoint);
+    const secondHalf = sortedReadings.slice(midpoint);
+
+    const firstHalfAvg =
+      firstHalf.reduce((acc, r) => acc + r.value, 0) / firstHalf.length;
+    const secondHalfAvg =
+      secondHalf.reduce((acc, r) => acc + r.value, 0) / secondHalf.length;
+
+    let trend: "up" | "down" | "stable" = "stable";
+    if (secondHalfAvg > firstHalfAvg + 5) trend = "up";
+    else if (secondHalfAvg < firstHalfAvg - 5) trend = "down";
+
+    // Calculate readings by type
+    const readingsByType: GlucoseStats["readingsByType"] = {};
+
+    sortedReadings.forEach((reading) => {
+      const type = reading.readingType;
+      if (!readingsByType[type]) {
+        readingsByType[type] = { count: 0, average: 0 };
+      }
+      readingsByType[type].count++;
+      readingsByType[type].average =
+        (readingsByType[type].average * (readingsByType[type].count - 1) +
+          reading.value) /
+        readingsByType[type].count;
+    });
+
+    // Round averages
+    Object.keys(readingsByType).forEach((type) => {
+      readingsByType[type].average = Math.round(readingsByType[type].average);
+    });
+
+    return {
+      average,
+      min,
+      max,
+      inRange: percentInRange,
+      total: sortedReadings.length,
+      trend,
+      readingsByType,
+    };
+  };
+
+  // Get 7-day and monthly statistics
+  const last7Days = readings.filter((reading) => {
+    const readingDate = new Date(reading.timestamp);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return readingDate >= sevenDaysAgo;
+  });
+
+  const lastMonth = readings.filter((reading) => {
+    const readingDate = new Date(reading.timestamp);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return readingDate >= thirtyDaysAgo;
+  });
+
+  const weeklyStats = calculateStats(last7Days);
+  const monthlyStats = calculateStats(lastMonth);
+
+  // Save a new reading
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call delay
-    setTimeout(() => {
+    try {
+      const newReading: Omit<GlucoseReading, "id"> = {
+        userId,
+        value,
+        readingType,
+        timestamp: new Date(),
+        notes: notes.trim() || undefined,
+      };
+
+      const result = await saveGlucoseReading(newReading);
+
+      if (result.success) {
+        toast({
+          title: "Амжилттай",
+          description: "Сахарын хэмжилт амжилттай хадгалагдлаа",
+        });
+
+        // Refresh data
+        const updatedReadings = await getGlucoseReadings(userId, 30);
+        if (updatedReadings.success && updatedReadings.data) {
+          setReadings(updatedReadings.data);
+        }
+
+        // Reset form
+        setNotes("");
+
+        // Switch to chart tab
+        setActiveTab("chart");
+      } else {
+        toast({
+          title: "Алдаа гарлаа",
+          description: result.error || "Хэмжилт хадгалж чадсангүй",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving reading:", error);
+      toast({
+        title: "Алдаа гарлаа",
+        description: "Хэмжилт хадгалж чадсангүй",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-      // Switch to chart tab
-      setActiveTab("chart");
-      // Show some kind of success message if needed
-    }, 1000);
+    }
   };
+
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return date.toLocaleString("mn-MN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Convert readings format for chart component
+  const chartReadings = readings.map((reading) => ({
+    id: reading.id || "",
+    value: reading.value,
+    timestamp: reading.timestamp,
+    type: getReadingTypeText(reading.readingType),
+  }));
 
   return (
     <div className="px-4 py-4 mx-auto max-w-5xl">
@@ -126,35 +323,42 @@ export default function GlucoseTrackerPage() {
         <h1 className="text-2xl font-bold">Цусны сахарын хяналт</h1>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle>Хамгийн сүүлийн хэмжилт</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-3xl font-bold">
-                {staticGlucoseReadings[0].value} мг/дл
+      {readings.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle>Хамгийн сүүлийн хэмжилт</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-3xl font-bold">
+                  {readings[0].value} мг/дл
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {formatDate(readings[0].timestamp)}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                2023 оны 4-р сарын 20, 07:28
+              <div className="text-right">
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    readings[0].value
+                  )}`}
+                >
+                  {getStatusLabel(readings[0].value)}
+                </span>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {getReadingTypeText(readings[0].readingType)}
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                {getStatusLabel(staticGlucoseReadings[0].value)}
-              </span>
-              <div className="text-sm text-muted-foreground mt-1">
-                {staticGlucoseReadings[0].type}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="chart" onValueChange={setActiveTab} value={activeTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="chart">График</TabsTrigger>
+          <TabsTrigger value="stats">Статистик</TabsTrigger>
           <TabsTrigger value="history">Түүх</TabsTrigger>
           <TabsTrigger value="add">Шинэ хэмжилт</TabsTrigger>
         </TabsList>
@@ -168,11 +372,318 @@ export default function GlucoseTrackerPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-80 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  Туршилтын орчин
+              {isLoadingReadings ? (
+                <div className="h-80 flex items-center justify-center">
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                    <div className="text-muted-foreground">
+                      Ачааллаж байна...
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : readings.length > 0 ? (
+                <div className="h-80">
+                  <GlucoseChart readings={chartReadings} />
+                </div>
+              ) : (
+                <div className="h-80 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p>Хэмжилтийн мэдээлэл байхгүй байна</p>
+                    <p className="text-sm mt-2">
+                      Шинэ хэмжилт нэмснээр график харуулах боломжтой
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Статистик харуулах */}
+        <TabsContent value="stats" className="p-0 border-none">
+          <Card>
+            <CardHeader>
+              <CardTitle>Сахарын хэмжилтийн статистик</CardTitle>
+              <CardDescription>
+                Сүүлийн 7 хоног болон сарын мэдээлэл
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingReadings ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                    <div className="text-muted-foreground">
+                      Ачааллаж байна...
+                    </div>
+                  </div>
+                </div>
+              ) : readings.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Хэмжилтийн мэдээлэл байхгүй байна</p>
+                  <p className="text-sm mt-2">
+                    Шинэ хэмжилт нэмснээр статистик харах боломжтой
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* 7 хоногийн статистик */}
+                  <div>
+                    <div className="flex items-center mb-3">
+                      <Calendar className="mr-2 h-5 w-5 text-blue-500" />
+                      <h3 className="text-lg font-medium">Сүүлийн 7 хоног</h3>
+                    </div>
+
+                    {weeklyStats ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Дундаж хэмжээ
+                            </span>
+                            <span className="font-bold">
+                              {weeklyStats.average} мг/дл
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Хамгийн бага
+                            </span>
+                            <span className="font-medium">
+                              {weeklyStats.min} мг/дл
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Хамгийн их
+                            </span>
+                            <span className="font-medium">
+                              {weeklyStats.max} мг/дл
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              Нийт хэмжилт
+                            </span>
+                            <span className="font-medium">
+                              {weeklyStats.total}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Хэвийн хүрээнд
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={
+                                weeklyStats.inRange >= 70
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }
+                            >
+                              {weeklyStats.inRange}%
+                            </Badge>
+                          </div>
+                          <div className="mb-3">
+                            <Progress
+                              value={weeklyStats.inRange}
+                              className="h-2"
+                            />
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-sm text-muted-foreground mr-1">
+                              Тренд:
+                            </span>
+                            <div className="flex items-center">
+                              {weeklyStats.trend === "up" && (
+                                <>
+                                  <ChevronUp className="h-4 w-4 text-red-500" />{" "}
+                                  <span className="text-sm text-red-500">
+                                    Өсөж байна
+                                  </span>
+                                </>
+                              )}
+                              {weeklyStats.trend === "down" && (
+                                <>
+                                  <ChevronDown className="h-4 w-4 text-green-500" />{" "}
+                                  <span className="text-sm text-green-500">
+                                    Буурч байна
+                                  </span>
+                                </>
+                              )}
+                              {weeklyStats.trend === "stable" && (
+                                <>
+                                  <TrendingUp className="h-4 w-4 text-blue-500" />{" "}
+                                  <span className="text-sm text-blue-500">
+                                    Тогтвортой
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-3 text-muted-foreground border rounded-lg">
+                        Сүүлийн 7 хоногт хэмжилт хийгдээгүй байна
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Сарын статистик */}
+                  <div>
+                    <div className="flex items-center mb-3">
+                      <Calendar className="mr-2 h-5 w-5 text-indigo-500" />
+                      <h3 className="text-lg font-medium">Сүүлийн сар</h3>
+                    </div>
+
+                    {monthlyStats ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Дундаж хэмжээ
+                            </span>
+                            <span className="font-bold">
+                              {monthlyStats.average} мг/дл
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Хамгийн бага
+                            </span>
+                            <span className="font-medium">
+                              {monthlyStats.min} мг/дл
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Хамгийн их
+                            </span>
+                            <span className="font-medium">
+                              {monthlyStats.max} мг/дл
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              Нийт хэмжилт
+                            </span>
+                            <span className="font-medium">
+                              {monthlyStats.total}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Хэвийн хүрээнд
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={
+                                monthlyStats.inRange >= 70
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }
+                            >
+                              {monthlyStats.inRange}%
+                            </Badge>
+                          </div>
+                          <div className="mb-3">
+                            <Progress
+                              value={monthlyStats.inRange}
+                              className="h-2"
+                            />
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-sm text-muted-foreground mr-1">
+                              Тренд:
+                            </span>
+                            <div className="flex items-center">
+                              {monthlyStats.trend === "up" && (
+                                <>
+                                  <ChevronUp className="h-4 w-4 text-red-500" />{" "}
+                                  <span className="text-sm text-red-500">
+                                    Өсөж байна
+                                  </span>
+                                </>
+                              )}
+                              {monthlyStats.trend === "down" && (
+                                <>
+                                  <ChevronDown className="h-4 w-4 text-green-500" />{" "}
+                                  <span className="text-sm text-green-500">
+                                    Буурч байна
+                                  </span>
+                                </>
+                              )}
+                              {monthlyStats.trend === "stable" && (
+                                <>
+                                  <TrendingUp className="h-4 w-4 text-blue-500" />{" "}
+                                  <span className="text-sm text-blue-500">
+                                    Тогтвортой
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-3 text-muted-foreground border rounded-lg">
+                        Сүүлийн сард хэмжилт хийгдээгүй байна
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Хэмжилтийн төрлөөр */}
+                  {monthlyStats &&
+                    Object.keys(monthlyStats.readingsByType).length > 0 && (
+                      <div>
+                        <div className="flex items-center mb-3">
+                          <TrendingUp className="mr-2 h-5 w-5 text-purple-500" />
+                          <h3 className="text-lg font-medium">Төрлөөр</h3>
+                        </div>
+
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Төрөл</TableHead>
+                              <TableHead className="text-right">
+                                Хэмжилт
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Дундаж
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(monthlyStats.readingsByType).map(
+                              ([type, data]) => (
+                                <TableRow key={type}>
+                                  <TableCell>
+                                    {getReadingTypeText(
+                                      type as GlucoseReading["readingType"]
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {data.count}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {data.average} мг/дл
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -208,20 +719,25 @@ export default function GlucoseTrackerPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredReadings.length > 0 ? (
+                    {isLoadingReadings ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4">
+                          <div className="flex justify-center items-center">
+                            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                            Ачааллаж байна...
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredReadings.length > 0 ? (
                       filteredReadings.map((reading) => (
                         <TableRow key={reading.id}>
                           <TableCell className="font-medium">
-                            {reading.id === "g1" && "2023/04/20, 07:28"}
-                            {reading.id === "g2" && "2023/04/20, 06:30"}
-                            {reading.id === "g3" && "2023/04/20, 05:45"}
-                            {reading.id === "g4" && "2023/04/19, 10:15"}
-                            {reading.id === "g5" && "2023/04/18, 08:30"}
-                            {reading.id === "g6" && "2023/04/17, 12:45"}
-                            {reading.id === "g7" && "2023/04/16, 06:00"}
+                            {formatDate(reading.timestamp)}
                           </TableCell>
                           <TableCell>{reading.value} мг/дл</TableCell>
-                          <TableCell>{reading.type}</TableCell>
+                          <TableCell>
+                            {getReadingTypeText(reading.readingType)}
+                          </TableCell>
                           <TableCell>
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -273,20 +789,39 @@ export default function GlucoseTrackerPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="type" className="text-sm font-medium">
+                  <label htmlFor="readingType" className="text-sm font-medium">
                     Хэмжилтийн төрөл
                   </label>
                   <select
+                    id="readingType"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
+                    value={readingType}
+                    onChange={(e) =>
+                      setReadingType(
+                        e.target.value as GlucoseReading["readingType"]
+                      )
+                    }
                   >
-                    <option value="Хооллохын өмнө">Хооллохын өмнө</option>
-                    <option value="Хооллосноос хойш">Хооллосноос хойш</option>
-                    <option value="Өлөн үед">Өлөн үед</option>
-                    <option value="Унтахын өмнө">Унтахын өмнө</option>
-                    <option value="Дасгалын дараа">Дасгалын дараа</option>
+                    <option value="before_meal">Хооллохын өмнө</option>
+                    <option value="after_meal">Хооллосноос хойш</option>
+                    <option value="fasting">Өлөн үед</option>
+                    <option value="bedtime">Унтахын өмнө</option>
+                    <option value="random">Санамсаргүй</option>
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="notes" className="text-sm font-medium">
+                    Тэмдэглэл (заавал биш)
+                  </label>
+                  <Input
+                    id="notes"
+                    name="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full"
+                    placeholder="Жишээ: идсэн хоол, дасгал хөдөлгөөн, эсвэл өөр сэтгэгдэл"
+                  />
                 </div>
               </CardContent>
               <div className="p-6 pt-0">
@@ -295,7 +830,17 @@ export default function GlucoseTrackerPage() {
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Хадгалж байна..." : "Хадгалах"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Хадгалж байна...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Хадгалах
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

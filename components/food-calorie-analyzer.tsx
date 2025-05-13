@@ -284,7 +284,7 @@ export default function FoodCalorieAnalyzer({
         {/* <h1 className="text-2xl font-bold">Хоолны калори тооцоолуур</h1> */}
       </div>
 
-      {isDiabetic && (
+      {/* {isDiabetic && (
         <Alert className="bg-yellow-50 border-yellow-200">
           <AlertTriangle className="h-4 w-4 text-yellow-500" />
           <AlertTitle>Туршилтын орчин</AlertTitle>
@@ -292,7 +292,7 @@ export default function FoodCalorieAnalyzer({
             Туршилтын орчин тул зарим үйлдэл хязгаарлагдсан байна.
           </AlertDescription>
         </Alert>
-      )}
+      )} */}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3">
