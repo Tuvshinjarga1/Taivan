@@ -2,6 +2,11 @@
 
 import { groq } from "@ai-sdk/groq";
 import { generateText } from "ai";
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from "@google/generative-ai";
 
 export async function generateHealthInsightsAction(healthData: {
   heartRate: number;
@@ -115,61 +120,184 @@ export async function analyzeFoodImageAction(imageBase64: string) {
       ? imageBase64.split("base64,")[1]
       : imageBase64;
 
-    // For development or when we don't have API access, just use simulation
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Check if we have the Gemini API key
+    const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    // Generate a simulated response based on the image
-    // In a real implementation, this would come from the AI model
-    const simulatedFoodItems = [
+    if (!geminiApiKey) {
+      // Бүтэлгүйтлийн хариу буцаах
+      return {
+        success: false,
+        error:
+          "Gemini API түлхүүр олдсонгүй. Системийн админтай холбогдоно уу.",
+      };
+    }
+
+    // Initialize the Gemini AI with the API key
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+    // Configure safety settings
+    const safetySettings = [
       {
-        name: "Шарсан тахианы цээж",
-        portion: "4 унц (113гр)",
-        calories: 165,
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
       },
       {
-        name: "Бор будаа",
-        portion: "1 аяга (195гр)",
-        calories: 216,
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
       },
       {
-        name: "Жигнэсэн брокколи",
-        portion: "1 аяга (91гр)",
-        calories: 55,
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
       },
       {
-        name: "Оливын тос (ногоон дээр)",
-        portion: "1 цайны халбага (5мл)",
-        calories: 40,
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
       },
     ];
 
-    const totalCalories = simulatedFoodItems.reduce(
-      (sum, item) => sum + item.calories,
-      0
-    );
+    // Use the gemini-1.5-flash model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      safetySettings,
+    });
 
-    return {
-      success: true,
-      data: {
-        foodItems: simulatedFoodItems,
-        totalCalories,
+    const prompt = `
+      Зурган дээрх хоолыг задлан шинжилж, дараах мэдээллийг зөвхөн JSON форматаар гарга:
+
+      1. Хоол бүрийн нэр (монгол хэл дээр)
+      2. Порцын хэмжээ (ойролцоогоор, грамм эсвэл унцаар)
+      3. Нэг порц дахь калорийн хэмжээ (тоо)
+
+      Хариултаа **зөвхөн дараах JSON формат** ашиглан өгнө үү. Өөр тайлбар, текст бүү нэм.
+      {
+        "foodItems": [
+          {
+            "name": "Хоолны нэр",
+            "portion": "Порцын хэмжээ (жишээ нь: 100гр эсвэл 3oz)",
+            "calories": 000
+          }
+        ]
+      }
+
+      Зөвхөн JSON форматаар хариулт өгнө үү.
+    `;
+
+    // Prepare the image part
+    const imagePart = {
+      inlineData: {
+        data: base64Data,
+        mimeType: "image/jpeg", // Assume JPEG, but could be adapted based on input
       },
     };
 
-    // In a real implementation with Groq, you would use something like:
-    /*
-    const { text } = await generateText({
-      model: groq("llama-3.1-8b-instant"),
-      prompt: prompt,
-      maxTokens: 1000,
-      // You would need to include the image data in a format the model can process
-    })
-    
-    // Parse the JSON response
-    const result = JSON.parse(text)
-    return { success: true, data: result }
-    */
+    // Generate content with the image and prompt
+    const result = await model.generateContent([imagePart, prompt]);
+    const response = await result.response;
+    const textResponse = response.text();
+
+    try {
+      // Try to extract JSON from response if it contains additional text
+      // First, handle the case where response is wrapped in markdown code blocks
+      let cleanedResponse = textResponse;
+
+      // Remove markdown code blocks if present (```json ... ```)
+      const markdownCodeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
+      const markdownMatches = markdownCodeBlockRegex.exec(textResponse);
+
+      if (markdownMatches && markdownMatches[1]) {
+        cleanedResponse = markdownMatches[1].trim();
+      }
+
+      // Then try to extract JSON objects
+      const jsonRegex = /{[\s\S]*?}/g;
+      const jsonMatches = cleanedResponse.match(jsonRegex);
+
+      let jsonResponse;
+
+      if (jsonMatches && jsonMatches.length > 0) {
+        // Try to parse the first found JSON object
+        try {
+          jsonResponse = JSON.parse(jsonMatches[0]);
+        } catch (e) {
+          // If that fails, try to parse the entire cleaned response
+          jsonResponse = JSON.parse(cleanedResponse);
+        }
+      } else {
+        // No JSON found, try parsing the entire cleaned response
+        jsonResponse = JSON.parse(cleanedResponse);
+      }
+
+      // Ensure the response has the expected structure
+      if (!jsonResponse.foodItems || !Array.isArray(jsonResponse.foodItems)) {
+        throw new Error("Invalid JSON structure: missing foodItems array");
+      }
+
+      // Sanitize and convert food items data
+      const sanitizedFoodItems = jsonResponse.foodItems.map((item: any) => {
+        // Ensure calories is a number
+        let calories = 0;
+        if (typeof item.calories === "number") {
+          calories = item.calories;
+        } else if (typeof item.calories === "string") {
+          // Extract first number from string if it contains text
+          const match = item.calories.match(/\d+/);
+          if (match) {
+            calories = parseInt(match[0]);
+          }
+        }
+
+        return {
+          name: item.name || "Тодорхойлогдоогүй хоол",
+          portion: item.portion || "1 порц",
+          calories: calories,
+        };
+      });
+
+      // Calculate total calories
+      const totalCalories = sanitizedFoodItems.reduce(
+        (sum: number, item: any) => sum + item.calories,
+        0
+      );
+
+      return {
+        success: true,
+        data: {
+          foodItems: sanitizedFoodItems,
+          totalCalories,
+          rawResponse: textResponse,
+        },
+      };
+    } catch (parseError) {
+      console.error("Error parsing AI response as JSON:", parseError);
+      console.log("Raw response:", textResponse);
+
+      // Attempt to extract food information using regex pattern matching
+      const extractedItems = extractFoodItemsFromText(textResponse);
+
+      if (extractedItems.length > 0) {
+        const totalCalories = extractedItems.reduce(
+          (sum, item) => sum + item.calories,
+          0
+        );
+
+        return {
+          success: true,
+          data: {
+            foodItems: extractedItems,
+            totalCalories,
+            rawResponse: textResponse,
+          },
+        };
+      }
+
+      // If all parsing attempts fail
+      return {
+        success: false,
+        error:
+          "Хоолны мэдээллийг зөв хэлбэрээр задалж чадсангүй. Дахин оролдоно уу.",
+        rawResponse: textResponse,
+      };
+    }
   } catch (error) {
     console.error("Error analyzing food image:", error);
     return {
@@ -177,4 +305,86 @@ export async function analyzeFoodImageAction(imageBase64: string) {
       error: "Хоолны зургийг задлан шинжлэхэд алдаа гарлаа",
     };
   }
+}
+
+// Regex-based function to extract food items from non-JSON text
+function extractFoodItemsFromText(
+  text: string
+): Array<{ name: string; portion: string; calories: number }> {
+  const foodItems = [];
+
+  // Try to find food names, portions and calories
+  const foodNameRegex = /([А-ЯӨҮа-яөү\s]+)[\s\:]+/g;
+  const portionRegex = /(\d+(?:\.\d+)?)\s*(?:гр|г|мл|порц|ширхэг|аяга)/g;
+  const caloriesRegex = /(\d+(?:\.\d+)?)\s*(?:кал|калори|ккал)/g;
+
+  // First attempt: try to match structured content
+  const foodNames = Array.from(text.matchAll(foodNameRegex)).map((m) =>
+    m[1].trim()
+  );
+  const portions = Array.from(text.matchAll(portionRegex)).map((m) =>
+    m[0].trim()
+  );
+  const calories = Array.from(text.matchAll(caloriesRegex)).map((m) =>
+    parseInt(m[1])
+  );
+
+  // If we have at least food names
+  if (foodNames.length > 0) {
+    for (let i = 0; i < foodNames.length; i++) {
+      foodItems.push({
+        name: foodNames[i],
+        portion: i < portions.length ? portions[i] : "1 порц",
+        calories: i < calories.length ? calories[i] : 200, // Default calories if not found
+      });
+    }
+  } else {
+    // Look for common Mongolian food items
+    const commonFoods = [
+      {
+        pattern: /бууз/i,
+        name: "Монгол бууз",
+        portion: "5 ширхэг",
+        calories: 600,
+      },
+      {
+        pattern: /хуушуур/i,
+        name: "Хуушуур",
+        portion: "3 ширхэг",
+        calories: 750,
+      },
+      { pattern: /цуйван/i, name: "Цуйван", portion: "1 порц", calories: 450 },
+      { pattern: /гуляш/i, name: "Гуляш", portion: "1 порц", calories: 350 },
+      { pattern: /будаа/i, name: "Будаа", portion: "1 аяга", calories: 200 },
+      { pattern: /мах/i, name: "Мах", portion: "100гр", calories: 250 },
+      {
+        pattern: /салат/i,
+        name: "Ногооны салат",
+        portion: "1 порц",
+        calories: 100,
+      },
+      { pattern: /шөл/i, name: "Шөл", portion: "1 аяга", calories: 150 },
+    ];
+
+    for (const food of commonFoods) {
+      if (food.pattern.test(text)) {
+        foodItems.push({
+          name: food.name,
+          portion: food.portion,
+          calories: food.calories,
+        });
+      }
+    }
+
+    // If still no items detected, add a default item
+    if (foodItems.length === 0) {
+      foodItems.push({
+        name: "Тодорхойлогдоогүй хоол",
+        portion: "1 порц",
+        calories: 250,
+      });
+    }
+  }
+
+  return foodItems;
 }

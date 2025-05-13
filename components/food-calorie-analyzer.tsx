@@ -40,8 +40,23 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+interface FoodItem {
+  name: string;
+  portion: string;
+  calories: number;
+  carbs?: number;
+}
+
 interface FoodCalorieAnalyzerProps {
   userId: string;
+}
+
+interface AnalysisResult {
+  foodItems: FoodItem[];
+  totalCalories: number;
+  totalCarbs?: number;
+  diabeticRecommendations?: string[];
+  rawResponse?: string; // Add raw response for debugging
 }
 
 export default function FoodCalorieAnalyzer({
@@ -51,21 +66,14 @@ export default function FoodCalorieAnalyzer({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("analyze");
+  const [showRawResponse, setShowRawResponse] = useState(false);
   const [mealType, setMealType] = useState<
     "breakfast" | "lunch" | "dinner" | "snack"
   >("lunch");
   const [isDiabetic, setIsDiabetic] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<{
-    foodItems: Array<{
-      name: string;
-      calories: number;
-      portion: string;
-      carbs?: number;
-    }>;
-    totalCalories: number;
-    totalCarbs?: number;
-    diabeticRecommendations?: string[];
-  } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const router = useRouter();
@@ -126,11 +134,11 @@ export default function FoodCalorieAnalyzer({
     try {
       const result = await analyzeFoodImageAction(image);
 
-      if (result.success) {
+      if (result.success && result.data) {
         // Диабетийн горимд нүүрс усны мэдээлэл нэмэх
         if (isDiabetic) {
           // Нүүрс усны хэмжээг тооцоолох (жишээ логик)
-          const foodItemsWithCarbs = result.data.foodItems.map((item) => {
+          const foodItemsWithCarbs = result.data.foodItems.map((item: any) => {
             // Энгийн жишээ тооцоолол - бодит байдал дээр илүү нарийн тооцоолол хийх ёстой
             const estimatedCarbs = Math.round(item.calories * 0.12); // Ойролцоогоор 12% нь нүүрс ус гэж үзье
             return {
@@ -140,7 +148,7 @@ export default function FoodCalorieAnalyzer({
           });
 
           const totalCarbs = foodItemsWithCarbs.reduce(
-            (sum, item) => sum + (item.carbs || 0),
+            (sum: number, item: any) => sum + (item.carbs || 0),
             0
           );
 
@@ -170,9 +178,13 @@ export default function FoodCalorieAnalyzer({
             totalCalories: result.data.totalCalories,
             totalCarbs,
             diabeticRecommendations,
+            rawResponse: result.rawResponse, // Store raw response if available
           });
         } else {
-          setAnalysisResult(result.data);
+          setAnalysisResult({
+            ...result.data,
+            rawResponse: result.rawResponse, // Store raw response if available
+          });
         }
 
         toast({
@@ -273,7 +285,7 @@ export default function FoodCalorieAnalyzer({
       </div>
 
       {isDiabetic && (
-        <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+        <Alert className="bg-yellow-50 border-yellow-200">
           <AlertTriangle className="h-4 w-4 text-yellow-500" />
           <AlertTitle>Туршилтын орчин</AlertTitle>
           <AlertDescription>
@@ -443,13 +455,33 @@ export default function FoodCalorieAnalyzer({
                   </div>
                 </div>
 
+                {/* Debugging section for showing raw JSON response */}
+                {analysisResult.rawResponse && (
+                  <div className="rounded-lg border bg-slate-50 p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-semibold">
+                        AI хариу (Хөгжүүлэгчийн горим)
+                      </h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowRawResponse(!showRawResponse)}
+                      >
+                        {showRawResponse ? "Нуух" : "Харуулах"}
+                      </Button>
+                    </div>
+                    {showRawResponse && (
+                      <pre className="text-xs bg-slate-100 p-2 rounded overflow-auto max-h-60">
+                        {analysisResult.rawResponse}
+                      </pre>
+                    )}
+                  </div>
+                )}
+
                 {isDiabetic &&
                   analysisResult.diabeticRecommendations &&
                   analysisResult.diabeticRecommendations.length > 0 && (
-                    <Alert
-                      variant="warning"
-                      className="bg-yellow-50 border-yellow-200"
-                    >
+                    <Alert className="bg-yellow-50 border-yellow-200">
                       <AlertTriangle className="h-4 w-4 text-yellow-500" />
                       <AlertTitle>Чихрийн шижингийн зөвлөмж</AlertTitle>
                       <AlertDescription>
@@ -589,10 +621,7 @@ export default function FoodCalorieAnalyzer({
                 {isDiabetic &&
                   analysisResult.diabeticRecommendations &&
                   analysisResult.diabeticRecommendations.length > 0 && (
-                    <Alert
-                      variant="warning"
-                      className="bg-yellow-50 border-yellow-200"
-                    >
+                    <Alert className="bg-yellow-50 border-yellow-200">
                       <AlertTriangle className="h-4 w-4 text-yellow-500" />
                       <AlertTitle>Чихрийн шижингийн зөвлөмж</AlertTitle>
                       <AlertDescription>
@@ -646,10 +675,7 @@ export default function FoodCalorieAnalyzer({
             <CardContent className="space-y-4">
               {isDiabetic ? (
                 <div className="space-y-4">
-                  <Alert
-                    variant="warning"
-                    className="bg-yellow-50 border-yellow-200"
-                  >
+                  <Alert className="bg-yellow-50 border-yellow-200">
                     <AlertTriangle className="h-4 w-4 text-yellow-500" />
                     <AlertTitle>Чихрийн шижингийн эрсдэлтэй</AlertTitle>
                     <AlertDescription>
