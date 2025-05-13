@@ -281,7 +281,7 @@ export default function FoodCalorieAnalyzer({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Хянах самбар руу буцах
         </Button>
-        <h1 className="text-2xl font-bold">Хоолны калори тооцоолуур</h1>
+        {/* <h1 className="text-2xl font-bold">Хоолны калори тооцоолуур</h1> */}
       </div>
 
       {isDiabetic && (
