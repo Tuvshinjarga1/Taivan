@@ -352,14 +352,14 @@ export default function FoodCalorieAnalyzer({
                     <Upload className="mr-2 h-4 w-4" />
                     Зураг оруулах
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     className="flex-1"
                     onClick={handleCameraCapture}
                   >
                     <Camera className="mr-2 h-4 w-4" />
                     Зураг авах
-                  </Button>
+                  </Button> */}
                   <Input
                     ref={fileInputRef}
                     type="file"

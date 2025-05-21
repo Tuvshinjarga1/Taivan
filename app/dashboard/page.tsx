@@ -10,7 +10,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import ConnectGoogleFitButton from "@/components/connect-googlefit-button";
 
-// Fallback health data in case fetching fails
+// Анхны эрүүл мэндийн дата
 const fallbackHealthData = {
   heartRate: 72,
   steps: 8243,
@@ -18,7 +18,7 @@ const fallbackHealthData = {
   calories: 1842,
 };
 
-// Static user ID for demo
+// Туршилтын хэрэглэгчийн ID
 const staticUserId = "demo-user-123";
 
 export default function DashboardPage() {
@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Check for auth status parameter in URL
+  // URL дээрх баталгаажуулалтын төлөвийг шалгах
   useEffect(() => {
     const authStatus = searchParams.get("auth");
 
@@ -45,7 +45,7 @@ export default function DashboardPage() {
       });
     }
 
-    // Remove the auth parameter from URL
+    // URL-ээс auth параметрийг устгах
     if (authStatus) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete("auth");
@@ -53,17 +53,17 @@ export default function DashboardPage() {
     }
   }, [searchParams, router]);
 
-  // Check if user is authenticated and fetch data
+  // Хэрэглэгч баталгаажсан эсэхийг шалгаж, өгөгдөл авах
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
 
-      // Check if authenticated with Google Fit
+      // Google Fit-тэй холбогдсон эсэхийг шалгах
       const authResult = await isGoogleFitAuthenticatedAction();
       setIsAuthenticated(!!authResult);
 
       if (authResult) {
-        // Fetch health data from Google Fit
+        // Google Fit-ээс эрүүл мэндийн мэдээлэл авах
         const result = await getAllHealthDataAction(staticUserId);
 
         if (result.success && result.data) {
@@ -81,8 +81,8 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-sm text-muted-foreground">
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-muted-foreground">
             Мэдээлэл ачааллаж байна...
           </p>
         </div>
@@ -91,21 +91,31 @@ export default function DashboardPage() {
   }
 
   return (
-    <>
-      {!isAuthenticated && (
-        <div className="mx-4 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-          <p className="font-medium text-yellow-800 mb-2">
-            Google Fit-тэй холбогдоогүй байна
-          </p>
-          <p className="text-yellow-700 mb-3">
-            Бодит эрүүл мэндийн мэдээлэл харахын тулд Google Fit-тэй холбогдоно
-            уу.
-          </p>
-          <ConnectGoogleFitButton fullWidth size="sm" />
-        </div>
-      )}
+    <main className="min-h-screen bg-gray-50">
+      <div className="mx-auto px-2 sm:px-4 max-w-full sm:max-w-screen-lg py-3 sm:py-6">
+        {!isAuthenticated && (
+          <div className="mx-0 sm:mx-4 my-2 sm:my-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm">
+            <p className="font-medium text-yellow-800 mb-1 sm:mb-2 text-sm sm:text-base">
+              Google Fit-тэй холбогдоогүй байна
+            </p>
+            <p className="text-yellow-700 mb-3 sm:mb-4 text-xs sm:text-sm">
+              Та бодит эрүүл мэндийн мэдээлэл авахын тулд Google Fit
+              бүртгэлтэйгээ холбогдоно уу.
+            </p>
+            <div className="flex justify-center">
+              <ConnectGoogleFitButton
+                fullWidth
+                size="sm"
+                className="text-xs sm:text-sm py-1.5 sm:py-2"
+              />
+            </div>
+          </div>
+        )}
 
-      <HealthDashboard healthData={healthData} userId={staticUserId} />
-    </>
+        <div className="py-2">
+          <HealthDashboard healthData={healthData} userId={staticUserId} />
+        </div>
+      </div>
+    </main>
   );
 }

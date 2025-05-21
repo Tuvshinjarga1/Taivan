@@ -17,7 +17,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, RefreshCw, Link2Off } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define interfaces for type safety
@@ -54,6 +65,12 @@ export default function SmartwatchPage() {
   const [weeklyData, setWeeklyData] = useState<PeriodData | null>(null);
   const [monthlyData, setMonthlyData] = useState<PeriodData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [tokenStatus, setTokenStatus] = useState<
+    "valid" | "expired" | "unknown"
+  >("unknown");
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -61,20 +78,93 @@ export default function SmartwatchPage() {
   useEffect(() => {
     async function checkAuthentication() {
       setIsLoading(true);
-      const authResult = await isGoogleFitAuthenticatedAction();
-      setIsAuthenticated(!!authResult);
+      try {
+        const authResult = await isGoogleFitAuthenticatedAction();
+        setIsAuthenticated(!!authResult);
 
-      if (authResult) {
-        await fetchHealthData();
-        await fetchWeeklyData();
-        await fetchMonthlyData();
+        // Check if token is valid or expired
+        if (authResult) {
+          setTokenStatus("valid");
+          await fetchHealthData();
+          await fetchWeeklyData();
+          await fetchMonthlyData();
+        } else {
+          // If not authenticated, token might have expired
+          setTokenStatus("expired");
+        }
+      } catch (error) {
+        console.error("Баталгаажуулалт шалгахад алдаа гарлаа:", error);
+        setTokenStatus("expired");
+        setIsAuthenticated(false);
+
+        toast({
+          title: "Холболтын алдаа",
+          description:
+            "Google Fit-тэй холболт дууссан байж магадгүй. Дахин холбогдоно уу.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     }
 
     checkAuthentication();
   }, []);
+
+  // Function to handle reconnection
+  const handleReconnect = async () => {
+    setIsReconnecting(true);
+    try {
+      toast({
+        title: "Дахин холбогдож байна",
+        description: "Google Fit-тэй холболтыг шинэчилж байна...",
+      });
+
+      // Will be handled by ConnectGoogleFitButton component
+      setTokenStatus("unknown");
+    } catch (error) {
+      console.error("Дахин холбоход алдаа гарлаа:", error);
+      toast({
+        title: "Холболт амжилтгүй",
+        description: "Google Fit-тэй дахин холбогдоход алдаа гарлаа",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReconnecting(false);
+    }
+  };
+
+  // Function to handle disconnection
+  const handleDisconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      // Call API to revoke token (this would need to be implemented in a real application)
+      // For demo purposes, just simulating a disconnect
+
+      // Notify the user
+      toast({
+        title: "Холболт салгагдлаа",
+        description: "Google Fit-тэй холболт амжилттай салгагдлаа",
+      });
+
+      // Reset authentication status
+      setIsAuthenticated(false);
+      setTokenStatus("expired");
+      setHealthData(null);
+      setWeeklyData(null);
+      setMonthlyData(null);
+    } catch (error) {
+      console.error("Холболт салгахад алдаа гарлаа:", error);
+      toast({
+        title: "Алдаа гарлаа",
+        description: "Google Fit-тэй холболт салгахад алдаа гарлаа",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+      setShowDisconnectDialog(false);
+    }
+  };
 
   // Function to fetch health data from Google Fit
   async function fetchHealthData() {
@@ -211,51 +301,163 @@ export default function SmartwatchPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-4">
-        <div className="flex items-center mb-6">
+      <div className="mx-auto px-2 sm:px-4 max-w-full sm:max-w-screen-lg">
+        <div className="flex items-center py-3 mb-2 sm:mb-6">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/dashboard")}
+            className="text-sm"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Хянах самбар руу буцах
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Буцах
           </Button>
         </div>
 
+        {/* Token expiration warning */}
+        {tokenStatus === "expired" && (
+          <Card className="mb-4 sm:mb-6 border-yellow-300 bg-yellow-50">
+            <CardHeader className="pb-2 px-3 py-3 sm:px-4 sm:py-4">
+              <CardTitle className="text-yellow-800 text-base sm:text-lg">
+                Холболт дууссан байна
+              </CardTitle>
+              <CardDescription className="text-yellow-700 text-xs sm:text-sm">
+                Google Fit-тэй холболт дууссан тул мэдээлэл авах боломжгүй байна
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 sm:px-4 sm:pb-4">
+              <p className="mb-3 sm:mb-4 text-xs sm:text-sm text-yellow-700">
+                Төхөөрөмжийн мэдээлэл авахын тулд дахин холболт хийх
+                шаардлагатай. Аюулгүй байдлын үүднээс Google Fit-ийн холболт нь
+                тодорхой хугацааны дараа автоматаар дуусдаг.
+              </p>
+              <Button
+                className="w-full text-sm bg-yellow-600 hover:bg-yellow-700"
+                disabled={isReconnecting}
+                onClick={handleReconnect}
+              >
+                {isReconnecting ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Холбогдож байна...
+                  </>
+                ) : (
+                  "Дахин холбогдох"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {!isAuthenticated ? (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Google Fit-тэй холбогдох</CardTitle>
-              <CardDescription>
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="px-3 py-3 sm:px-6 sm:py-4">
+              <CardTitle className="text-base sm:text-lg">
+                Google Fit-тэй холбогдох
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Ухаалаг цаг болон Google Fit мэдээллийг холбохын тулд эхлээд
                 Google бүртгэлтэйгээ холбогдох шаардлагатай
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-4">
               <ConnectGoogleFitButton fullWidth />
             </CardContent>
           </Card>
         ) : (
           <>
-            <Tabs defaultValue="daily">
-              <TabsList className="mb-4">
-                <TabsTrigger value="daily">Өдөр</TabsTrigger>
-                <TabsTrigger value="weekly">7 хоног</TabsTrigger>
-                <TabsTrigger value="monthly">Сар</TabsTrigger>
+            {/* Connection status indicator */}
+            <div className="flex flex-wrap items-center mb-4 gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+                <span className="text-xs sm:text-sm text-green-700 font-medium">
+                  Google Fit-тэй амжилттай холбогдсон
+                </span>
+              </div>
+              <div className="flex w-full sm:w-auto sm:ml-auto gap-2 mt-2 sm:mt-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReconnect}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm text-green-700 border-green-200 hover:bg-green-100"
+                >
+                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  Дахин холбогдох
+                </Button>
+
+                <AlertDialog
+                  open={showDisconnectDialog}
+                  onOpenChange={setShowDisconnectDialog}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 sm:flex-none text-xs sm:text-sm text-red-700 border-red-200 hover:bg-red-100"
+                      disabled={isDisconnecting}
+                    >
+                      <Link2Off className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      {isDisconnecting ? "Салгаж байна..." : "Холболт салгах"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Холболт салгах уу?</AlertDialogTitle>
+                      <AlertDialogDescription className="text-xs sm:text-sm">
+                        Google Fit-тэй холболтыг салгаснаар та одоогийн
+                        мэдээллээ харах боломжгүй болно. Дараа нь дахин
+                        холбогдож болно.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2 sm:gap-0">
+                      <AlertDialogCancel className="text-xs sm:text-sm h-9">
+                        Цуцлах
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700 text-xs sm:text-sm h-9"
+                        onClick={handleDisconnect}
+                      >
+                        Салгах
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+
+            <Tabs defaultValue="daily" className="w-full">
+              <TabsList className="mb-3 sm:mb-4 w-full grid grid-cols-3">
+                <TabsTrigger
+                  value="daily"
+                  className="text-xs sm:text-sm py-1.5 sm:py-2"
+                >
+                  Өдөр
+                </TabsTrigger>
+                <TabsTrigger
+                  value="weekly"
+                  className="text-xs sm:text-sm py-1.5 sm:py-2"
+                >
+                  7 хоног
+                </TabsTrigger>
+                <TabsTrigger
+                  value="monthly"
+                  className="text-xs sm:text-sm py-1.5 sm:py-2"
+                >
+                  Сар
+                </TabsTrigger>
               </TabsList>
 
               {/* Daily View */}
               <TabsContent value="daily">
                 {healthData && (
-                  <Card className="mb-6">
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
+                  <Card className="mb-4 sm:mb-6">
+                    <CardHeader className="pb-2 px-3 py-3 sm:px-6 sm:py-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <div>
-                          <CardTitle>
+                          <CardTitle className="text-base sm:text-lg">
                             Эрүүл мэндийн мэдээллийн дүн шинжилгээ
                           </CardTitle>
-                          <CardDescription>
+                          <CardDescription className="text-xs sm:text-sm">
                             Google Fit-ээс татсан хамгийн сүүлийн мэдээлэл
                           </CardDescription>
                         </div>
@@ -264,10 +466,11 @@ export default function SmartwatchPage() {
                           size="sm"
                           onClick={fetchHealthData}
                           disabled={isAnalyzing}
+                          className="self-start sm:self-auto text-xs sm:text-sm whitespace-nowrap"
                         >
                           {isAnalyzing ? (
                             <>
-                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              <RefreshCw className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                               Шинэчилж байна...
                             </>
                           ) : (
@@ -276,16 +479,18 @@ export default function SmartwatchPage() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 border rounded-lg">
-                          <h3 className="text-lg font-medium mb-2">Алхалт</h3>
-                          <p className="text-3xl font-bold">
+                    <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div className="p-3 sm:p-4 border rounded-lg">
+                          <h3 className="text-sm sm:text-lg font-medium mb-1 sm:mb-2">
+                            Алхалт
+                          </h3>
+                          <p className="text-xl sm:text-3xl font-bold">
                             {healthData.steps.toLocaleString()}
                           </p>
                           {analysis && (
                             <p
-                              className={`text-sm mt-1 ${
+                              className={`text-xs sm:text-sm mt-1 ${
                                 analysis.stepGoalReached
                                   ? "text-green-600"
                                   : "text-amber-600"
@@ -298,16 +503,16 @@ export default function SmartwatchPage() {
                           )}
                         </div>
 
-                        <div className="p-4 border rounded-lg">
-                          <h3 className="text-lg font-medium mb-2">
+                        <div className="p-3 sm:p-4 border rounded-lg">
+                          <h3 className="text-sm sm:text-lg font-medium mb-1 sm:mb-2">
                             Зүрхний цохилт
                           </h3>
-                          <p className="text-3xl font-bold">
+                          <p className="text-xl sm:text-3xl font-bold">
                             {healthData.heartRate} BPM
                           </p>
                           {analysis && (
                             <p
-                              className={`text-sm mt-1 ${
+                              className={`text-xs sm:text-sm mt-1 ${
                                 analysis.heartRateStatus === "normal"
                                   ? "text-green-600"
                                   : analysis.heartRateStatus === "elevated"
@@ -324,14 +529,16 @@ export default function SmartwatchPage() {
                           )}
                         </div>
 
-                        <div className="p-4 border rounded-lg">
-                          <h3 className="text-lg font-medium mb-2">Нойр</h3>
-                          <p className="text-3xl font-bold">
+                        <div className="p-3 sm:p-4 border rounded-lg">
+                          <h3 className="text-sm sm:text-lg font-medium mb-1 sm:mb-2">
+                            Нойр
+                          </h3>
+                          <p className="text-xl sm:text-3xl font-bold">
                             {healthData.sleep} цаг
                           </p>
                           {analysis && (
                             <p
-                              className={`text-sm mt-1 ${
+                              className={`text-xs sm:text-sm mt-1 ${
                                 analysis.sleepQuality === "good"
                                   ? "text-green-600"
                                   : analysis.sleepQuality === "average"
@@ -348,14 +555,16 @@ export default function SmartwatchPage() {
                           )}
                         </div>
 
-                        <div className="p-4 border rounded-lg">
-                          <h3 className="text-lg font-medium mb-2">Калори</h3>
-                          <p className="text-3xl font-bold">
+                        <div className="p-3 sm:p-4 border rounded-lg">
+                          <h3 className="text-sm sm:text-lg font-medium mb-1 sm:mb-2">
+                            Калори
+                          </h3>
+                          <p className="text-xl sm:text-3xl font-bold">
                             {healthData.calories} ккал
                           </p>
                           {analysis && (
                             <p
-                              className={`text-sm mt-1 ${
+                              className={`text-xs sm:text-sm mt-1 ${
                                 analysis.caloriesLevel === "normal"
                                   ? "text-green-600"
                                   : "text-amber-600"

@@ -85,14 +85,14 @@ export default function DiabetesInformation({
       try {
         // Сануулгуудыг ачаалах
         const remindersResult = await getUserReminders(userId);
-        if (remindersResult.success) {
-          setReminders(remindersResult.data);
+        if (remindersResult.success && remindersResult.data) {
+          setReminders(remindersResult.data || []);
         }
 
         // Сахарын хэмжилтүүдийг ачаалах
         const glucoseResult = await getGlucoseReadings(userId, 14);
-        if (glucoseResult.success) {
-          setGlucoseReadings(glucoseResult.data);
+        if (glucoseResult.success && glucoseResult.data) {
+          setGlucoseReadings(glucoseResult.data || []);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -167,8 +167,9 @@ export default function DiabetesInformation({
 
         // Сануулгуудыг дахин ачаалах
         const remindersResult = await getUserReminders(userId);
-        if (remindersResult.success) {
-          setReminders(remindersResult.data);
+        if (remindersResult.success && remindersResult.data) {
+          // Use empty array as fallback if data is undefined
+          setReminders(remindersResult.data || []);
         }
 
         // Формыг цэвэрлэх
@@ -240,44 +241,53 @@ export default function DiabetesInformation({
   const averageGlucose = calculateAverageGlucose();
 
   return (
-    <div className="space-y-4 p-4 pb-20">
+    <div className="space-y-4 pb-20">
       <div className="flex items-center justify-between mb-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push("/dashboard")}
+          className="text-xs sm:text-sm"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
           Хянах самбар руу буцах
         </Button>
-        <h1 className="text-2xl font-bold">Чихрийн шижингийн мэдээлэл</h1>
+        <h1 className="text-lg sm:text-xl font-bold">Чихрийн шижин</h1>
       </div>
 
       {/* Сахарын хэмжилтийн товч мэдээлэл */}
       {latestReading && (
-        <Card className="bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+        <Card className="bg-white shadow-sm">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2">
-                <div className="bg-purple-100 p-2 rounded-full">
-                  <Droplet className="h-5 w-5 text-purple-500" />
+                <div className="bg-purple-100 p-1.5 sm:p-2 rounded-full">
+                  <Droplet className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Сахарын түвшин</h3>
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold">{latestReading.value}</p>
-                    <span className="text-sm text-muted-foreground">мг/дл</span>
+                  <h3 className="text-sm sm:text-base font-medium">
+                    Сахарын түвшин
+                  </h3>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <p className="text-xl sm:text-2xl font-bold">
+                      {latestReading.value}
+                    </p>
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      мг/дл
+                    </span>
                     <Badge
                       variant="outline"
-                      className={getGlucoseStatus(latestReading.value).color}
+                      className={`text-xs ${
+                        getGlucoseStatus(latestReading.value).color
+                      }`}
                     >
                       {getGlucoseStatus(latestReading.value).label}
                     </Badge>
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">
+              <div className="text-right mt-1 sm:mt-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {new Date(latestReading.timestamp).toLocaleString("mn-MN", {
                     month: "short",
                     day: "numeric",
@@ -285,89 +295,94 @@ export default function DiabetesInformation({
                     minute: "2-digit",
                   })}
                 </p>
-                <p className="text-sm">
+                <p className="text-xs sm:text-sm">
                   Дундаж:{" "}
                   <span className="font-medium">{averageGlucose} мг/дл</span>
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex justify-between">
+            <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-1 sm:gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1"
+                className="text-xs px-1.5 py-1 sm:px-3 sm:py-2 h-auto flex items-center justify-center gap-1"
                 onClick={() => router.push("/diabetes-assessment")}
               >
-                <AlertTriangle className="h-4 w-4" />
-                Эрсдэлийн үнэлгээ
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Эрсдэлийн</span> Үнэлгээ
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1"
+                className="text-xs px-1.5 py-1 sm:px-3 sm:py-2 h-auto flex items-center justify-center gap-1"
                 onClick={() => setActiveTab("reminders")}
               >
-                <Bell className="h-4 w-4" />
-                Сануулгууд
+                <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+                Сануулга
               </Button>
               <Button
                 variant="default"
                 size="sm"
-                className="flex items-center gap-1"
+                className="text-xs px-1.5 py-1 sm:px-3 sm:py-2 h-auto flex items-center justify-center gap-1"
                 onClick={() => router.push("/glucose-tracker")}
               >
-                <PlusCircle className="h-4 w-4" />
-                Шинэ хэмжилт
+                <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Шинэ</span> Хэмжилт
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-20">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-4 gap-0.5 sm:gap-2 mb-4 w-full">
           <TabsTrigger
             value="about"
-            className="flex flex-col items-center py-2"
+            className="flex flex-col items-center py-1.5 sm:py-2 text-xs"
           >
-            <Info className="h-4 w-4 mb-1" />
-            <span className="text-xs">Мэдээлэл</span>
+            <Info className="h-3 w-3 sm:h-4 sm:w-4 mb-0.5 sm:mb-1" />
+            <span className="text-[10px] sm:text-xs">Мэдээлэл</span>
           </TabsTrigger>
           <TabsTrigger
             value="prevention"
-            className="flex flex-col items-center py-2"
+            className="flex flex-col items-center py-1.5 sm:py-2 text-xs"
           >
-            <AlertTriangle className="h-4 w-4 mb-1" />
-            <span className="text-xs">Урьдчилан сэргийлэлт</span>
+            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 mb-0.5 sm:mb-1" />
+            <span className="text-[10px] sm:text-xs">Сэргийлэлт</span>
           </TabsTrigger>
-          <TabsTrigger value="diet" className="flex flex-col items-center py-2">
-            <Apple className="h-4 w-4 mb-1" />
-            <span className="text-xs">Хооллолт</span>
+          <TabsTrigger
+            value="diet"
+            className="flex flex-col items-center py-1.5 sm:py-2 text-xs"
+          >
+            <Apple className="h-3 w-3 sm:h-4 sm:w-4 mb-0.5 sm:mb-1" />
+            <span className="text-[10px] sm:text-xs">Хооллолт</span>
           </TabsTrigger>
           <TabsTrigger
             value="reminders"
-            className="flex flex-col items-center py-2"
+            className="flex flex-col items-center py-1.5 sm:py-2 text-xs"
           >
-            <Bell className="h-4 w-4 mb-1" />
-            <span className="text-xs">Сануулга</span>
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4 mb-0.5 sm:mb-1" />
+            <span className="text-[10px] sm:text-xs">Сануулга</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Чихрийн шижин гэж юу вэ? */}
-        <TabsContent value="about" className="space-y-4 mt-4">
+        <TabsContent value="about" className="space-y-4 mt-2 sm:mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Чихрийн шижин гэж юу вэ?</CardTitle>
-              <CardDescription>
+            <CardHeader className="px-3 py-3 sm:px-6 sm:py-4">
+              <CardTitle className="text-base sm:text-lg">
+                Чихрийн шижин гэж юу вэ?
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Чихрийн шижингийн талаарх үндсэн мэдээлэл
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-3 sm:px-6 pb-3 sm:pb-6">
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">
+                <h3 className="font-semibold text-base sm:text-lg">
                   Чихрийн шижингийн тодорхойлолт
                 </h3>
-                <p>
+                <p className="text-xs sm:text-sm">
                   Чихрийн шижин бол бие махбодь хангалттай хэмжээний инсулин
                   үйлдвэрлэж чадахгүй эсвэл үйлдвэрлэсэн инсулинээ үр дүнтэй
                   ашиглаж чадахгүй үед үүсдэг архаг өвчин юм. Инсулин нь нойр
@@ -377,15 +392,15 @@ export default function DiabetesInformation({
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">
+                <h3 className="font-semibold text-base sm:text-lg">
                   Чихрийн шижингийн төрлүүд
                 </h3>
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="type1">
-                    <AccordionTrigger>
+                    <AccordionTrigger className="text-xs sm:text-sm py-2">
                       1-р хэлбэрийн чихрийн шижин
                     </AccordionTrigger>
-                    <AccordionContent>
+                    <AccordionContent className="text-xs sm:text-sm">
                       <p>
                         1-р хэлбэрийн чихрийн шижин нь аутоиммуны эмгэг бөгөөд
                         биеийн дархлааны систем нойр булчирхайн инсулин
@@ -398,10 +413,10 @@ export default function DiabetesInformation({
                   </AccordionItem>
 
                   <AccordionItem value="type2">
-                    <AccordionTrigger>
+                    <AccordionTrigger className="text-xs sm:text-sm py-2">
                       2-р хэлбэрийн чихрийн шижин
                     </AccordionTrigger>
-                    <AccordionContent>
+                    <AccordionContent className="text-xs sm:text-sm">
                       <p>
                         2-р хэлбэрийн чихрийн шижин нь хамгийн түгээмэл хэлбэр
                         бөгөөд бие махбодь инсулинд тэсвэртэй болох эсвэл
@@ -414,8 +429,10 @@ export default function DiabetesInformation({
                   </AccordionItem>
 
                   <AccordionItem value="gestational">
-                    <AccordionTrigger>Жирэмсний чихрийн шижин</AccordionTrigger>
-                    <AccordionContent>
+                    <AccordionTrigger className="text-xs sm:text-sm py-2">
+                      Жирэмсний чихрийн шижин
+                    </AccordionTrigger>
+                    <AccordionContent className="text-xs sm:text-sm">
                       <p>
                         Жирэмсний чихрийн шижин нь жирэмсэн үед үүсдэг бөгөөд
                         ихэнх тохиолдолд хүүхэд төрсний дараа арилдаг. Гэсэн
@@ -426,8 +443,10 @@ export default function DiabetesInformation({
                   </AccordionItem>
 
                   <AccordionItem value="prediabetes">
-                    <AccordionTrigger>Урьдал чихрийн шижин</AccordionTrigger>
-                    <AccordionContent>
+                    <AccordionTrigger className="text-xs sm:text-sm py-2">
+                      Урьдал чихрийн шижин
+                    </AccordionTrigger>
+                    <AccordionContent className="text-xs sm:text-sm">
                       <p>
                         Урьдал чихрийн шижин гэдэг нь цусан дахь сахарын хэмжээ
                         хэвийн хэмжээнээс өндөр боловч 2-р хэлбэрийн чихрийн
@@ -442,11 +461,15 @@ export default function DiabetesInformation({
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Шинж тэмдгүүд</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="p-4">
-                    <h4 className="font-medium mb-2">Ерөнхий шинж тэмдгүүд</h4>
-                    <ul className="list-disc pl-5 space-y-1">
+                <h3 className="font-semibold text-base sm:text-lg">
+                  Шинж тэмдгүүд
+                </h3>
+                <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                  <Card className="p-3 sm:p-4">
+                    <h4 className="font-medium text-sm sm:text-base mb-1 sm:mb-2">
+                      Ерөнхий шинж тэмдгүүд
+                    </h4>
+                    <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-sm">
                       <li>Их цангах</li>
                       <li>Ойр ойрхон шээх</li>
                       <li>Тайлбарлашгүй жин алдалт</li>
@@ -457,19 +480,19 @@ export default function DiabetesInformation({
                     </ul>
                   </Card>
 
-                  <Card className="p-4">
-                    <h4 className="font-medium mb-2">
+                  <Card className="p-3 sm:p-4">
+                    <h4 className="font-medium text-sm sm:text-base mb-1 sm:mb-2">
                       1-р хэлбэрийн онцлог шинжүүд
                     </h4>
-                    <ul className="list-disc pl-5 space-y-1">
+                    <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-sm">
                       <li>Гэнэтийн шинж тэмдэг</li>
                       <li>Кетоацидоз (амьсгал муудах)</li>
                       <li>Хурдан жин алдалт</li>
                     </ul>
-                    <h4 className="font-medium mt-4 mb-2">
+                    <h4 className="font-medium text-sm sm:text-base mt-3 sm:mt-4 mb-1 sm:mb-2">
                       2-р хэлбэрийн онцлог шинжүүд
                     </h4>
-                    <ul className="list-disc pl-5 space-y-1">
+                    <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-sm">
                       <li>Аажим үүсэх шинж тэмдэг</li>
                       <li>Арьс хар болох (acanthosis nigricans)</li>
                       <li>Мэдрэлийн гэмтэл (хөл бадайрах)</li>
@@ -479,9 +502,13 @@ export default function DiabetesInformation({
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Оношилгоо</h3>
-                <p>Чихрийн шижинг дараах шинжилгээнүүдээр оношилдог:</p>
-                <ul className="list-disc pl-5 space-y-1">
+                <h3 className="font-semibold text-base sm:text-lg">
+                  Оношилгоо
+                </h3>
+                <p className="text-xs sm:text-sm">
+                  Чихрийн шижинг дараах шинжилгээнүүдээр оношилдог:
+                </p>
+                <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-sm">
                   <li>
                     <span className="font-medium">
                       Өлөн үеийн цусан дахь сахарын шинжилгээ (FPG):
@@ -499,39 +526,6 @@ export default function DiabetesInformation({
                     <span className="font-medium">HbA1c шинжилгээ:</span> 6.5%
                     эсвэл түүнээс дээш
                   </li>
-                  <li>
-                    <span className="font-medium">
-                      Санамсаргүй цусан дахь сахарын шинжилгээ:
-                    </span>{" "}
-                    200 мг/дл (11.1 ммоль/л) эсвэл түүнээс дээш, шинж тэмдэгтэй
-                    хамт
-                  </li>
-                </ul>
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push("/diabetes-assessment")}
-                    className="w-full"
-                  >
-                    Эрсдэлийн үнэлгээ хийх
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Хүндрэлүүд</h3>
-                <p>
-                  Чихрийн шижинг зохицуулахгүй орхивол дараах хүндрэлүүд үүсч
-                  болно:
-                </p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Зүрх судасны өвчин</li>
-                  <li>Бөөрний өвчин</li>
-                  <li>Нүдний эмгэг (ретинопати)</li>
-                  <li>Мэдрэлийн гэмтэл (невропати)</li>
-                  <li>Хөлийн шарх, үе мөч тайрах</li>
-                  <li>Тархины цус харвалт</li>
-                  <li>Сэтгэцийн эрүүл мэндийн асуудлууд</li>
                 </ul>
               </div>
             </CardContent>

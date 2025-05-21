@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Health Monitor",
+  title: "Diabetes Monitor",
   description:
     "Monitor and manage your health data with our comprehensive health tracking app",
 };

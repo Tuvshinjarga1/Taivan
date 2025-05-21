@@ -35,25 +35,25 @@ export default function Settings({ userId }: SettingsProps) {
   const { toast } = useToast();
   const router = useRouter();
 
-  // User profile state
+  // Хэрэглэгчийн профайлын мэдээлэл
   const [profile, setProfile] = useState({
-    name: "Tuvshinjargal",
+    name: "Түвшинжаргал",
     email: "tuvshinjargal@gmail.com",
-    height: 175, // cm
-    weight: 75, // kg
+    height: 175, // см
+    weight: 75, // кг
     birthdate: "2001-01-01",
     gender: "male",
   });
 
-  // Goals state
+  // Зорилтууд
   const [goals, setGoals] = useState({
     steps: 10000,
-    sleep: 8, // hours
+    sleep: 8, // цаг
     calories: 2200,
     heartRate: { min: 60, max: 140 },
   });
 
-  // Notification settings
+  // Мэдэгдлийн тохиргоо
   const [notifications, setNotifications] = useState({
     dailySummary: true,
     goalAchievements: true,
@@ -62,7 +62,7 @@ export default function Settings({ userId }: SettingsProps) {
     appUpdates: false,
   });
 
-  // Units settings
+  // Хэмжих нэгжийн тохиргоо
   const [units, setUnits] = useState({
     distance: "km",
     weight: "kg",
@@ -70,7 +70,7 @@ export default function Settings({ userId }: SettingsProps) {
     time: "24h",
   });
 
-  // Privacy settings
+  // Нууцлалын тохиргоо
   const [privacy, setPrivacy] = useState({
     shareData: false,
     locationTracking: true,
@@ -79,98 +79,135 @@ export default function Settings({ userId }: SettingsProps) {
 
   const handleProfileUpdate = () => {
     toast({
-      title: "Profile Updated",
-      description: "Your profile information has been updated successfully.",
+      title: "Профайл шинэчлэгдлээ",
+      description: "Таны хувийн мэдээлэл амжилттай шинэчлэгдлээ.",
     });
   };
 
   const handleGoalsUpdate = () => {
     toast({
-      title: "Goals Updated",
-      description: "Your health goals have been updated successfully.",
+      title: "Зорилтууд шинэчлэгдлээ",
+      description: "Таны эрүүл мэндийн зорилтууд амжилттай шинэчлэгдлээ.",
     });
   };
 
   const handleNotificationsUpdate = () => {
     toast({
-      title: "Notification Settings Updated",
-      description: "Your notification preferences have been saved.",
+      title: "Мэдэгдлийн тохиргоо шинэчлэгдлээ",
+      description: "Таны мэдэгдлийн тохиргоо хадгалагдлаа.",
     });
   };
 
   const handleUnitsUpdate = () => {
     toast({
-      title: "Units Settings Updated",
-      description: "Your unit preferences have been saved.",
+      title: "Нэгжийн тохиргоо шинэчлэгдлээ",
+      description: "Таны хэмжих нэгжийн тохиргоо хадгалагдлаа.",
     });
   };
 
   const handlePrivacyUpdate = () => {
     toast({
-      title: "Privacy Settings Updated",
-      description: "Your privacy settings have been saved.",
+      title: "Нууцлалын тохиргоо шинэчлэгдлээ",
+      description: "Таны нууцлалын тохиргоо хадгалагдлаа.",
     });
   };
 
   return (
-    <div className="space-y-4 p-4 pb-20">
+    <div className="space-y-4 pb-20">
       <div className="flex items-center justify-between mb-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push("/dashboard")}
+          className="text-sm"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
+          Хянах самбар руу буцах
         </Button>
-        <h1 className="text-2xl font-bold">Settings</h1>
+        {/* <h1 className="text-xl sm:text-2xl font-bold">Тохиргоо</h1> */}
       </div>
 
-      <Tabs defaultValue="profile">
-        <TabsList className="grid grid-cols-5 mb-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="units">Units</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="w-full grid grid-cols-3 sm:grid-cols-5 mb-4 overflow-x-auto">
+          <TabsTrigger
+            value="profile"
+            className="text-xs sm:text-sm py-1.5 sm:py-2"
+          >
+            Профайл
+          </TabsTrigger>
+          <TabsTrigger
+            value="goals"
+            className="text-xs sm:text-sm py-1.5 sm:py-2"
+          >
+            Зорилтууд
+          </TabsTrigger>
+          <TabsTrigger
+            value="notifications"
+            className="text-xs sm:text-sm py-1.5 sm:py-2"
+          >
+            Мэдэгдэл
+          </TabsTrigger>
+          <TabsTrigger
+            value="units"
+            className="text-xs sm:text-sm py-1.5 sm:py-2"
+          >
+            Нэгж
+          </TabsTrigger>
+          <TabsTrigger
+            value="privacy"
+            className="text-xs sm:text-sm py-1.5 sm:py-2"
+          >
+            Нууцлал
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
           <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your personal information
+            <CardHeader className="px-4 py-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">
+                Хувийн мэдээлэл
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Хувийн мэдээллээ шинэчлэх
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               <div className="flex flex-col items-center mb-4">
-                <Avatar className="h-24 w-24 mb-2">
+                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 mb-2">
                   <AvatarImage
                     src="/placeholder.svg?height=96&width=96"
-                    alt="Profile"
+                    alt="Профайл"
                   />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarFallback>ТЖ</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="sm">
-                  Change Photo
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs sm:text-sm"
+                >
+                  Зураг солих
                 </Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name" className="text-xs sm:text-sm">
+                    Бүтэн нэр
+                  </Label>
                   <Input
                     id="name"
                     value={profile.name}
                     onChange={(e) =>
                       setProfile({ ...profile, name: e.target.value })
                     }
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-xs sm:text-sm">
+                    Имэйл
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -178,11 +215,14 @@ export default function Settings({ userId }: SettingsProps) {
                     onChange={(e) =>
                       setProfile({ ...profile, email: e.target.value })
                     }
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="height">Height (cm)</Label>
+                  <Label htmlFor="height" className="text-xs sm:text-sm">
+                    Өндөр (см)
+                  </Label>
                   <Input
                     id="height"
                     type="number"
@@ -193,11 +233,14 @@ export default function Settings({ userId }: SettingsProps) {
                         height: Number.parseInt(e.target.value),
                       })
                     }
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Label htmlFor="weight" className="text-xs sm:text-sm">
+                    Жин (кг)
+                  </Label>
                   <Input
                     id="weight"
                     type="number"
@@ -208,11 +251,14 @@ export default function Settings({ userId }: SettingsProps) {
                         weight: Number.parseInt(e.target.value),
                       })
                     }
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="birthdate">Date of Birth</Label>
+                  <Label htmlFor="birthdate" className="text-xs sm:text-sm">
+                    Төрсөн огноо
+                  </Label>
                   <Input
                     id="birthdate"
                     type="date"
@@ -220,50 +266,71 @@ export default function Settings({ userId }: SettingsProps) {
                     onChange={(e) =>
                       setProfile({ ...profile, birthdate: e.target.value })
                     }
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender" className="text-xs sm:text-sm">
+                    Хүйс
+                  </Label>
                   <Select
                     value={profile.gender}
                     onValueChange={(value) =>
                       setProfile({ ...profile, gender: value })
                     }
                   >
-                    <SelectTrigger id="gender">
-                      <SelectValue placeholder="Select gender" />
+                    <SelectTrigger id="gender" className="text-xs sm:text-sm">
+                      <SelectValue placeholder="Хүйсээ сонгоно уу" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer-not-to-say">
-                        Prefer not to say
+                      <SelectItem value="male" className="text-xs sm:text-sm">
+                        Эрэгтэй
+                      </SelectItem>
+                      <SelectItem value="female" className="text-xs sm:text-sm">
+                        Эмэгтэй
+                      </SelectItem>
+                      <SelectItem value="other" className="text-xs sm:text-sm">
+                        Бусад
+                      </SelectItem>
+                      <SelectItem
+                        value="prefer-not-to-say"
+                        className="text-xs sm:text-sm"
+                      >
+                        Хэлэхийг хүсэхгүй байна
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleProfileUpdate}>Save Changes</Button>
+            <CardFooter className="px-4 sm:px-6 flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-between">
+              <Button
+                onClick={handleProfileUpdate}
+                className="text-xs sm:text-sm w-full sm:w-auto"
+              >
+                Өөрчлөлтийг хадгалах
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="goals">
           <Card>
-            <CardHeader>
-              <CardTitle>Health Goals</CardTitle>
-              <CardDescription>Set your daily health targets</CardDescription>
+            <CardHeader className="px-4 py-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">
+                Эрүүл мэндийн зорилтууд
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Өдөр тутмын эрүүл мэндийн зорилтуудаа тохируулах
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 px-4 sm:px-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Footprints className="h-5 w-5 text-blue-500" />
-                  <Label htmlFor="steps-goal">
-                    Daily Steps Goal: {goals.steps.toLocaleString()}
+                  <Footprints className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  <Label htmlFor="steps-goal" className="text-xs sm:text-sm">
+                    Өдрийн алхалтын зорилт: {goals.steps.toLocaleString()}
                   </Label>
                 </div>
                 <Slider
@@ -280,9 +347,9 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Moon className="h-5 w-5 text-purple-500" />
-                  <Label htmlFor="sleep-goal">
-                    Sleep Goal (hours): {goals.sleep}
+                  <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                  <Label htmlFor="sleep-goal" className="text-xs sm:text-sm">
+                    Нойрны зорилт (цаг): {goals.sleep}
                   </Label>
                 </div>
                 <Slider
@@ -299,9 +366,9 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-green-500" />
-                  <Label htmlFor="calories-goal">
-                    Daily Calories Goal: {goals.calories.toLocaleString()}
+                  <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                  <Label htmlFor="calories-goal" className="text-xs sm:text-sm">
+                    Өдрийн калорийн зорилт: {goals.calories.toLocaleString()}
                   </Label>
                 </div>
                 <Slider
@@ -318,9 +385,9 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-red-500" />
-                  <Label>
-                    Heart Rate Range (bpm): {goals.heartRate.min} -{" "}
+                  <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+                  <Label className="text-xs sm:text-sm">
+                    Зүрхний цохилтын хязгаар (bpm): {goals.heartRate.min} -{" "}
                     {goals.heartRate.max}
                   </Label>
                 </div>
@@ -338,26 +405,35 @@ export default function Settings({ userId }: SettingsProps) {
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleGoalsUpdate}>Save Goals</Button>
+            <CardFooter className="px-4 sm:px-6">
+              <Button
+                onClick={handleGoalsUpdate}
+                className="text-xs sm:text-sm w-full sm:w-auto"
+              >
+                Зорилтуудыг хадгалах
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="notifications">
           <Card>
-            <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>
-                Manage your notification preferences
+            <CardHeader className="px-4 py-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">
+                Мэдэгдлийн тохиргоо
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Мэдэгдлийн сонголтуудаа удирдах
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="daily-summary">Daily Summary</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive a daily summary of your health metrics
+                  <Label htmlFor="daily-summary" className="text-xs sm:text-sm">
+                    Өдөр тутмын тойм
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Эрүүл мэндийн мэдээллийн өдөр тутмын тойм хүлээн авах
                   </p>
                 </div>
                 <Switch
@@ -374,9 +450,14 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="goal-achievements">Goal Achievements</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified when you reach your health goals
+                  <Label
+                    htmlFor="goal-achievements"
+                    className="text-xs sm:text-sm"
+                  >
+                    Зорилт биелүүлэлт
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Эрүүл мэндийн зорилтдоо хүрэхэд мэдэгдэл хүлээн авах
                   </p>
                 </div>
                 <Switch
@@ -393,11 +474,14 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="inactivity-reminders">
-                    Inactivity Reminders
+                  <Label
+                    htmlFor="inactivity-reminders"
+                    className="text-xs sm:text-sm"
+                  >
+                    Идэвхгүй байдлын сануулга
                   </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive reminders to move when inactive for too long
+                  <p className="text-xs text-muted-foreground">
+                    Удаан хугацаагаар хөдөлгөөнгүй байвал сануулга хүлээн авах
                   </p>
                 </div>
                 <Switch
@@ -414,9 +498,14 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="sleep-reminders">Sleep Reminders</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get reminders to prepare for sleep
+                  <Label
+                    htmlFor="sleep-reminders"
+                    className="text-xs sm:text-sm"
+                  >
+                    Нойрны сануулга
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Унтах цагаа бэлтгэхэд сануулга хүлээн авах
                   </p>
                 </div>
                 <Switch
@@ -433,9 +522,12 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="app-updates">App Updates</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications about app updates and new features
+                  <Label htmlFor="app-updates" className="text-xs sm:text-sm">
+                    Аппын шинэчлэл
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Аппын шинэчлэл болон шинэ функцуудын талаар мэдэгдэл хүлээн
+                    авах
                   </p>
                 </div>
                 <Switch
@@ -447,9 +539,12 @@ export default function Settings({ userId }: SettingsProps) {
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleNotificationsUpdate}>
-                Save Notification Settings
+            <CardFooter className="px-4 sm:px-6">
+              <Button
+                onClick={handleNotificationsUpdate}
+                className="text-xs sm:text-sm w-full sm:w-auto"
+              >
+                Мэдэгдлийн тохиргоог хадгалах
               </Button>
             </CardFooter>
           </Card>
@@ -457,103 +552,157 @@ export default function Settings({ userId }: SettingsProps) {
 
         <TabsContent value="units">
           <Card>
-            <CardHeader>
-              <CardTitle>Units Settings</CardTitle>
-              <CardDescription>
-                Customize your measurement units
+            <CardHeader className="px-4 py-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">
+                Хэмжих нэгжийн тохиргоо
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Хэмжих нэгжүүдээ өөрчлөх
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               <div className="space-y-2">
-                <Label htmlFor="distance-unit">Distance Unit</Label>
+                <Label htmlFor="distance-unit" className="text-xs sm:text-sm">
+                  Зайн нэгж
+                </Label>
                 <Select
                   value={units.distance}
                   onValueChange={(value) =>
                     setUnits({ ...units, distance: value })
                   }
                 >
-                  <SelectTrigger id="distance-unit">
-                    <SelectValue placeholder="Select distance unit" />
+                  <SelectTrigger
+                    id="distance-unit"
+                    className="text-xs sm:text-sm"
+                  >
+                    <SelectValue placeholder="Зайн нэгжээ сонгоно уу" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="km">Kilometers (km)</SelectItem>
-                    <SelectItem value="mi">Miles (mi)</SelectItem>
+                    <SelectItem value="km" className="text-xs sm:text-sm">
+                      Километр (км)
+                    </SelectItem>
+                    <SelectItem value="mi" className="text-xs sm:text-sm">
+                      Миль (mi)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="weight-unit">Weight Unit</Label>
+                <Label htmlFor="weight-unit" className="text-xs sm:text-sm">
+                  Жингийн нэгж
+                </Label>
                 <Select
                   value={units.weight}
                   onValueChange={(value) =>
                     setUnits({ ...units, weight: value })
                   }
                 >
-                  <SelectTrigger id="weight-unit">
-                    <SelectValue placeholder="Select weight unit" />
+                  <SelectTrigger
+                    id="weight-unit"
+                    className="text-xs sm:text-sm"
+                  >
+                    <SelectValue placeholder="Жингийн нэгжээ сонгоно уу" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                    <SelectItem value="lb">Pounds (lb)</SelectItem>
+                    <SelectItem value="kg" className="text-xs sm:text-sm">
+                      Килограмм (кг)
+                    </SelectItem>
+                    <SelectItem value="lb" className="text-xs sm:text-sm">
+                      Фунт (lb)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="temperature-unit">Temperature Unit</Label>
+                <Label
+                  htmlFor="temperature-unit"
+                  className="text-xs sm:text-sm"
+                >
+                  Температурын нэгж
+                </Label>
                 <Select
                   value={units.temperature}
                   onValueChange={(value) =>
                     setUnits({ ...units, temperature: value })
                   }
                 >
-                  <SelectTrigger id="temperature-unit">
-                    <SelectValue placeholder="Select temperature unit" />
+                  <SelectTrigger
+                    id="temperature-unit"
+                    className="text-xs sm:text-sm"
+                  >
+                    <SelectValue placeholder="Температурын нэгжээ сонгоно уу" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="celsius">Celsius (°C)</SelectItem>
-                    <SelectItem value="fahrenheit">Fahrenheit (°F)</SelectItem>
+                    <SelectItem value="celsius" className="text-xs sm:text-sm">
+                      Цельс (°C)
+                    </SelectItem>
+                    <SelectItem
+                      value="fahrenheit"
+                      className="text-xs sm:text-sm"
+                    >
+                      Фаренгейт (°F)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="time-format">Time Format</Label>
+                <Label htmlFor="time-format" className="text-xs sm:text-sm">
+                  Цагийн формат
+                </Label>
                 <Select
                   value={units.time}
                   onValueChange={(value) => setUnits({ ...units, time: value })}
                 >
-                  <SelectTrigger id="time-format">
-                    <SelectValue placeholder="Select time format" />
+                  <SelectTrigger
+                    id="time-format"
+                    className="text-xs sm:text-sm"
+                  >
+                    <SelectValue placeholder="Цагийн форматаа сонгоно уу" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="24h">24-hour</SelectItem>
-                    <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
+                    <SelectItem value="24h" className="text-xs sm:text-sm">
+                      24-цагийн
+                    </SelectItem>
+                    <SelectItem value="12h" className="text-xs sm:text-sm">
+                      12-цагийн (AM/PM)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleUnitsUpdate}>Save Unit Preferences</Button>
+            <CardFooter className="px-4 sm:px-6">
+              <Button
+                onClick={handleUnitsUpdate}
+                className="text-xs sm:text-sm w-full sm:w-auto"
+              >
+                Нэгжийн тохиргоог хадгалах
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="privacy">
           <Card>
-            <CardHeader>
-              <CardTitle>Privacy Settings</CardTitle>
-              <CardDescription>
-                Manage your data privacy preferences
+            <CardHeader className="px-4 py-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">
+                Нууцлалын тохиргоо
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Өгөгдлийн нууцлалын тохиргоогоо удирдах
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="share-data">Share Health Data</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow anonymous sharing of your health data for research
+                  <Label htmlFor="share-data" className="text-xs sm:text-sm">
+                    Эрүүл мэндийн мэдээлэл хуваалцах
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Судалгааны зорилгоор эрүүл мэндийн мэдээллийг нэр
+                    хаяггүйгээр хуваалцах
                   </p>
                 </div>
                 <Switch
@@ -567,9 +716,14 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="location-tracking">Location Tracking</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow the app to track your location for activity mapping
+                  <Label
+                    htmlFor="location-tracking"
+                    className="text-xs sm:text-sm"
+                  >
+                    Байршил хянах
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Идэвхийн мэдээлэлд байршлыг тэмдэглэхийг зөвшөөрөх
                   </p>
                 </div>
                 <Switch
@@ -583,9 +737,15 @@ export default function Settings({ userId }: SettingsProps) {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="data-collection">Data Collection</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow collection of app usage data to improve services
+                  <Label
+                    htmlFor="data-collection"
+                    className="text-xs sm:text-sm"
+                  >
+                    Өгөгдөл цуглуулалт
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Үйлчилгээг сайжруулах зорилгоор аппын хэрэглээний өгөгдөл
+                    цуглуулахыг зөвшөөрөх
                   </p>
                 </div>
                 <Switch
@@ -598,14 +758,20 @@ export default function Settings({ userId }: SettingsProps) {
               </div>
 
               <div className="pt-4">
-                <Button variant="outline" className="w-full">
-                  Delete All My Data
+                <Button
+                  variant="outline"
+                  className="w-full text-xs sm:text-sm text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Миний бүх өгөгдлийг устгах
                 </Button>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={handlePrivacyUpdate}>
-                Save Privacy Settings
+            <CardFooter className="px-4 sm:px-6">
+              <Button
+                onClick={handlePrivacyUpdate}
+                className="text-xs sm:text-sm w-full sm:w-auto"
+              >
+                Нууцлалын тохиргоог хадгалах
               </Button>
             </CardFooter>
           </Card>

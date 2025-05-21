@@ -1,12 +1,14 @@
-import Settings from "@/components/settings"
+import Settings from "@/components/settings";
 
 export default function SettingsPage() {
-  // In a real app, you would get the userId from the authenticated user
-  const userId = "user123" // Placeholder user ID
+  // Бодит апп-д хэрэглэгчийн ID-г баталгаажуулалтаас авна
+  const userId = "user123"; // Туршилтын хэрэглэгчийн ID
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <Settings userId={userId} />
+      <div className="mx-auto px-2 sm:px-4 max-w-full sm:max-w-screen-lg py-3 sm:py-6">
+        <Settings userId={userId} />
+      </div>
     </main>
-  )
+  );
 }
