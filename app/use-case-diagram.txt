@@ -1,0 +1,73 @@
+@startuml TaivanAppUseCase
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Хэрэглэгч" as User
+actor "Google Fit API" as GoogleFit
+actor "AI Үйлчилгээ" as AIService
+actor "Ухаалаг цаг" as Smartwatch
+
+rectangle "Тайван Апп" {
+  ' Аутентификацтай холбоотой
+  usecase "Бүртгүүлэх" as Register
+  usecase "Нэвтрэх" as Login
+  usecase "Google Fit-тэй холбогдох" as ConnectGoogleFit
+  usecase "Ухаалаг цагтай холбогдох" as ConnectSmartwatch
+
+  ' Эрүүл мэндийн мэдээлэл
+  usecase "Эрүүл мэндийн үзүүлэлтүүдийг харах" as ViewHealthMetrics
+  usecase "Эрүүл мэндийн мэдээллийг Google Fit-ээс татах" as FetchHealthData
+  usecase "Гараар эрүүл мэндийн мэдээлэл оруулах" as AddHealthData
+  usecase "Эрүүл мэндийн мэдээлэл шинэчлэх" as UpdateHealthData
+
+  ' Аналитик & Тайлан
+  usecase "AI эрүүл мэндийн дүгнэлт авах" as GetAIInsights
+  usecase "Эрүүл мэндийн тайлан харах" as ViewHealthReports
+  usecase "Хэрэглэгчийн ахиц дэвшил харах" as ViewProgress
+  usecase "7 хоног/сарын статистик харах" as ViewStats
+
+  ' Чихрийн шижин
+  usecase "Чихрийн шижингийн эрсдэлийн үнэлгээ хийх" as DiabetesRiskAssessment
+  usecase "Цусны сахарын түвшин хянах" as MonitorBloodGlucose
+  usecase "Чихрийн шижингийн мэдээлэл харах" as ViewDiabetesInfo
+
+  ' Бусад үйлчилгээнүүд
+  usecase "Хоолны шинжилгээ хийх" as AnalyzeFood
+  usecase "Хувийн тохиргоо өөрчлөх" as ManageSettings
+
+  ' Холбоосууд
+  ViewHealthMetrics .> FetchHealthData : <<include>>
+  GetAIInsights .> ViewHealthMetrics : <<include>>
+  DiabetesRiskAssessment .> ViewHealthMetrics : <<include>>
+  ConnectGoogleFit .> Login : <<extend>>
+}
+
+' Хэрэглэгчийн холбоос
+User --> Register
+User --> Login
+User --> ViewHealthMetrics
+User --> AddHealthData
+User --> UpdateHealthData
+User --> GetAIInsights
+User --> ViewHealthReports
+User --> ViewProgress
+User --> ViewStats
+User --> DiabetesRiskAssessment
+User --> MonitorBloodGlucose
+User --> ViewDiabetesInfo
+User --> AnalyzeFood
+User --> ManageSettings
+User --> ConnectGoogleFit
+User --> ConnectSmartwatch
+
+' Google Fit холбоос
+GoogleFit --> FetchHealthData
+
+' AI үйлчилгээний холбоос
+AIService --> GetAIInsights
+
+' Ухаалаг цагийн холбоос
+Smartwatch --> FetchHealthData
+
+@enduml

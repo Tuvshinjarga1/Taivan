@@ -425,7 +425,7 @@ export default function DiabetesRiskAssessment({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Хянах самбар руу буцах
         </Button>
-        <h1 className="text-2xl font-bold">Чихрийн шижингийн оношилгоо</h1>
+        {/* <h1 className="text-2xl font-bold">Чихрийн шижингийн оношилгоо</h1> */}
       </div>
 
       {!predictionResult ? (

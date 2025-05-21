@@ -1,0 +1,181 @@
+@startuml TaivanAppClassDiagram
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam packageStyle frame
+skinparam linetype ortho
+
+package "Тайван Апп" {
+  ' Үндсэн класс тодорхойлолтууд
+  class User {
+    -id: string
+    -name: string
+    -email: string
+    -password: string
+    -dateOfBirth: Date
+    -gender: string
+    -height: number
+    -weight: number
+    -isDiabetic: boolean
+    -googleFitConnected: boolean
+    -smartwatchConnected: boolean
+    +register()
+    +login()
+    +logout()
+    +updateProfile()
+    +connectGoogleFit()
+    +connectSmartwatch()
+  }
+
+  class HealthData {
+    -id: string
+    -userId: string
+    -timestamp: Date
+    -heartRate: number
+    -steps: number
+    -sleep: number
+    -calories: number
+    -source: string
+    +getAverageDailyHeartRate()
+    +getTotalSteps()
+    +getAverageSleep()
+    +getTotalCalories()
+    +getDataByDateRange()
+  }
+
+  class GlucoseData {
+    -id: string
+    -userId: string
+    -timestamp: Date
+    -value: number
+    -type: string
+    -note: string
+    +getLatestReading()
+    +getReadingsByDateRange()
+    +getAverageByTimeOfDay()
+    +addReading()
+    +calculateA1C()
+  }
+
+  class FoodData {
+    -id: string
+    -userId: string
+    -timestamp: Date
+    -name: string
+    -portionSize: number
+    -calories: number
+    -protein: number
+    -carbs: number
+    -fat: number
+    -imageUrl: string
+    -ingredients: string[]
+    +calculateTotalCalories()
+    +calculateNutrition()
+    +addFoodEntry()
+    +getFoodHistory()
+  }
+
+  class DiabetesRiskAssessment {
+    -id: string
+    -userId: string
+    -timestamp: Date
+    -age: number
+    -gender: string
+    -weight: number
+    -height: number
+    -familyHistory: boolean
+    -physicalActivity: string
+    -dietHabits: string
+    -riskScore: number
+    -riskLevel: string
+    +calculateRiskScore()
+    +generateRecommendations()
+    +saveAssessment()
+    +getHistory()
+  }
+
+  class AIService {
+    -apiKey: string
+    -model: string
+    +generateHealthInsights(healthData: HealthData)
+    +analyzeFoodImage(image: File)
+    +generateDietRecommendations(userData: User, foodData: FoodData[])
+    +predictGlucoseTrends(glucoseData: GlucoseData[])
+  }
+
+  class GoogleFitService {
+    -clientId: string
+    -clientSecret: string
+    -redirectUri: string
+    -accessToken: string
+    -refreshToken: string
+    +authenticate()
+    +getAccessToken()
+    +refreshAccessToken()
+    +fetchHealthData(userId: string, dateRange: DateRange)
+    +syncData(healthData: HealthData)
+  }
+
+  class HealthInsights {
+    -id: string
+    -userId: string
+    -timestamp: Date
+    -healthData: HealthData
+    -insights: string
+    -recommendations: string[]
+    +generateInsights()
+    +saveInsights()
+    +getInsightsHistory()
+  }
+
+  class Report {
+    -id: string
+    -userId: string
+    -type: string
+    -startDate: Date
+    -endDate: Date
+    -data: Object
+    -charts: Object[]
+    +generateDailyReport()
+    +generateWeeklyReport()
+    +generateMonthlyReport()
+    +exportToPDF()
+    +shareReport()
+  }
+
+  ' Интерфейсүүд
+  interface DataSource {
+    +fetchData()
+    +syncData()
+  }
+
+  interface AnalyticsService {
+    +analyzeData()
+    +generateInsights()
+  }
+
+  ' Классуудын харилцаа
+  User "1" --> "*" HealthData : owns
+  User "1" --> "*" GlucoseData : has
+  User "1" --> "*" FoodData : tracks
+  User "1" --> "*" DiabetesRiskAssessment : performs
+  User "1" --> "*" Report : views
+
+  HealthData ..> GoogleFitService : uses
+  HealthData <.. HealthInsights : analyzes
+  
+  GlucoseData <.. AIService : predicts trends
+  FoodData <.. AIService : analyzes
+  
+  GoogleFitService ..|> DataSource : implements
+  AIService ..|> AnalyticsService : implements
+  
+  HealthInsights --> AIService : uses
+  Report --> HealthData : includes
+  Report --> GlucoseData : includes
+  Report --> FoodData : includes
+  
+  DiabetesRiskAssessment --> AIService : uses for recommendations
+}
+
+@enduml 

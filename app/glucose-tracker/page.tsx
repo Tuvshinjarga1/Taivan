@@ -320,7 +320,7 @@ export default function GlucoseTrackerPage() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Буцах
         </Button>
-        <h1 className="text-2xl font-bold">Цусны сахарын хяналт</h1>
+        {/* <h1 className="text-2xl font-bold">Цусны сахарын хяналт</h1> */}
       </div>
 
       {readings.length > 0 && (
