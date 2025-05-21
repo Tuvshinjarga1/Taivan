@@ -21,10 +21,8 @@ const fallbackHealthData = {
 // Туршилтын хэрэглэгчийн ID
 const staticUserId = "demo-user-123";
 
-export default function DashboardPage() {
-  const [healthData, setHealthData] = useState(fallbackHealthData);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+// Separating the auth status check into a client component
+function AuthStatusHandler() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -52,6 +50,15 @@ export default function DashboardPage() {
       router.replace(newUrl.pathname + newUrl.search);
     }
   }, [searchParams, router]);
+
+  return null;
+}
+
+export default function DashboardPage() {
+  const [healthData, setHealthData] = useState(fallbackHealthData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
 
   // Хэрэглэгч баталгаажсан эсэхийг шалгаж, өгөгдөл авах
   useEffect(() => {
@@ -92,6 +99,11 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      {/* Wrap the component that uses useSearchParams in Suspense */}
+      <Suspense fallback={null}>
+        <AuthStatusHandler />
+      </Suspense>
+
       <div className="mx-auto px-2 sm:px-4 max-w-full sm:max-w-screen-lg py-3 sm:py-6">
         {!isAuthenticated && (
           <div className="mx-0 sm:mx-4 my-2 sm:my-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm">
