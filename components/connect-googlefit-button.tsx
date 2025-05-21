@@ -30,14 +30,31 @@ export default function ConnectGoogleFitButton({
     try {
       setIsLoading(true);
       const result = await getGoogleAuthURLAction();
-      window.location.href = result.url;
+
+      if (!result.success) {
+        toast({
+          title: "Алдаа",
+          description:
+            result.error || "Google Fit-тэй холбогдоход алдаа гарлаа",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error("Буцаасан URL хоосон байна");
+      }
     } catch (error) {
       console.error("Error getting Google auth URL:", error);
       toast({
         title: "Алдаа",
-        description: "Google Fit-тэй холбогдоход алдаа гарлаа",
+        description:
+          "Google Fit-тэй холбогдоход алдаа гарлаа. Та системийн админтай холбогдоно уу.",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
     }
   }

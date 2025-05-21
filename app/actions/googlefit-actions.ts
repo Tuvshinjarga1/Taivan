@@ -21,6 +21,16 @@ const SCOPES = [
 
 // Function to get Google OAuth URL
 export async function getGoogleAuthURLAction() {
+  // Check if client ID is set
+  if (!GOOGLE_CLIENT_ID) {
+    console.error("GOOGLE_CLIENT_ID is not set in environment variables");
+    return {
+      success: false,
+      error: "Google Client ID is not configured",
+      url: "",
+    };
+  }
+
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
 
   url.searchParams.append("client_id", GOOGLE_CLIENT_ID);
@@ -30,7 +40,23 @@ export async function getGoogleAuthURLAction() {
   url.searchParams.append("access_type", "offline");
   url.searchParams.append("prompt", "consent");
 
-  return { url: url.toString() };
+  // Add state parameter for security
+  const state = Math.random().toString(36).substring(2, 15);
+  url.searchParams.append("state", state);
+
+  // Store state in cookies for verification
+  const cookieStore = await cookies();
+  cookieStore.set("googleAuthState", state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 5, // 5 minutes
+    path: "/",
+  });
+
+  return {
+    success: true,
+    url: url.toString(),
+  };
 }
 
 // Function to exchange auth code for tokens
