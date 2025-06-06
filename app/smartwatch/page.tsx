@@ -175,15 +175,48 @@ export default function SmartwatchPage() {
       if (result.success && result.data) {
         setHealthData(result.data);
 
-        // Show success toast
-        toast({
-          title: "Мэдээлэл амжилттай шинэчлэгдлээ",
-          description: "Google Fit-ээс мэдээлэл амжилттай татагдлаа",
-        });
+        // Check which data sources were successful
+        if (result.datasourceStatus) {
+          const { steps, heartRate, sleep, calories } = result.datasourceStatus;
+          const allSuccessful = steps && heartRate && sleep && calories;
+
+          if (!allSuccessful) {
+            // Show a warning if some data sources failed
+            const failedSources = [];
+            if (!steps) failedSources.push("алхалт");
+            if (!heartRate) failedSources.push("зүрхний цохилт");
+            if (!sleep) failedSources.push("нойр");
+            if (!calories) failedSources.push("калори");
+
+            if (failedSources.length > 0) {
+              toast({
+                title: "Анхааруулга",
+                description: `Дараах мэдээллийг авах боломжгүй байсан: ${failedSources.join(
+                  ", "
+                )}. Үндсэн утгууд ашиглагдаж байна.`,
+                variant: "destructive",
+              });
+            }
+          } else {
+            // All successful
+            toast({
+              title: "Мэдээлэл амжилттай шинэчлэгдлээ",
+              description: "Google Fit-ээс мэдээлэл амжилттай татагдлаа",
+            });
+          }
+        } else {
+          // Default success message
+          toast({
+            title: "Мэдээлэл амжилттай шинэчлэгдлээ",
+            description: "Google Fit-ээс мэдээлэл амжилттай татагдлаа",
+          });
+        }
       } else {
         toast({
           title: "Алдаа гарлаа",
-          description: result.error || "Мэдээлэл татахад алдаа гарлаа",
+          description:
+            result.error ||
+            "Мэдээлэл татахад алдаа гарлаа. Та дахин оролдоно уу.",
           variant: "destructive",
         });
       }
@@ -191,7 +224,8 @@ export default function SmartwatchPage() {
       console.error("Error fetching health data:", error);
       toast({
         title: "Алдаа гарлаа",
-        description: "Мэдээлэл татахад алдаа гарлаа",
+        description:
+          "Мэдээлэл татахад алдаа гарлаа. Хэрэв алдаа үргэлжлэн гарвал, системийн админтай холбогдоно уу.",
         variant: "destructive",
       });
     } finally {
